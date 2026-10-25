@@ -1,6 +1,6 @@
 # TIẾN ĐỘ & KẾ HOẠCH
 
-## TASK HIỆN TẠI: M01-T02
+## TASK HIỆN TẠI: M01-T03
 
 ## Quyết định đã chốt
 
@@ -44,7 +44,7 @@
 - [x] **T01 Lobby**
   - Mục tiêu: join, đặt tên/màu, danh sách lobby, chọn host, host chỉnh bot, Start, chat, đọc cờ khởi động, in IP (đánh dấu 26.x).
   - Xong khi: 2 tab trình duyệt thấy nhau trong lobby.
-- [ ] **T02 Vòng lặp server**
+- [x] **T02 Vòng lặp server**
   - Mục tiêu: tick 30Hz, input bitmask, di chuyển trên nền phẳng tạm, snapshot 20Hz, ping.
 - [ ] **T03 Mượt phía client**
   - Mục tiêu: dự đoán + reconciliation + nội suy, bảng debug F3 (fps, ping, tick, số entity).
@@ -167,3 +167,4 @@ Mỗi task trái phải có: data đầy đủ, server logic, hiệu ứng clien
 | M00-T03 | reports/M00-T03.md | 2026-10-26 |
 | M00-TONG-KET | reports/M00-TONG-KET.md | 2026-10-26 |
 | M01-T01 | reports/M01-T01.md | 2026-10-26 |
+| M01-T02 | reports/M01-T02.md | 2026-10-26 |

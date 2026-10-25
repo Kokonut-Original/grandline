@@ -1,5 +1,5 @@
 // server/match.js
-// May trang thai tran dau (LOBBY, LAUNCH, PLAY, END), quan ly nguoi choi, bot va chat.
+// May trang thai tran dau (LOBBY, LAUNCH, PLAY, END), vong tick 30Hz mo phong va snapshot 20Hz.
 // Phu thuoc: shared/01-constants.js, shared/02-enums.js, shared/03-protocol.js.
 
 'use strict';
@@ -19,7 +19,6 @@ class MatchManager {
     this.players = new Map(); // id -> player object
     this.hostId = null;
 
-    // Cau hinh bot mac dinh: lap du 32
     this.botsCount = (typeof flags.bots === 'number') ? flags.bots : (S.CONST.MAX_PLAYERS - 1);
     this.botMix = {
       easy: 0.4,
@@ -28,14 +27,123 @@ class MatchManager {
     };
 
     this.net = null;
+    this.currentTick = 0;
+    this.tickInterval = null;
+    this.snapInterval = null;
+
+    this.dt = 1 / S.CONST.TICK_HZ;
   }
 
   setNet(net) {
     this.net = net;
   }
 
+  startLoop() {
+    if (this.tickInterval) return;
+
+    // Vong tick 30Hz
+    const tickMs = Math.floor(1000 / S.CONST.TICK_HZ);
+    this.tickInterval = setInterval(() => {
+      this.tick(this.dt);
+    }, tickMs);
+
+    // Vong snapshot 20Hz
+    const snapMs = Math.floor(1000 / S.CONST.SNAP_HZ);
+    this.snapInterval = setInterval(() => {
+      this.broadcastSnapshot();
+    }, snapMs);
+  }
+
+  stopLoop() {
+    if (this.tickInterval) {
+      clearInterval(this.tickInterval);
+      this.tickInterval = null;
+    }
+    if (this.snapInterval) {
+      clearInterval(this.snapInterval);
+      this.snapInterval = null;
+    }
+  }
+
+  tick(dt) {
+    this.currentTick++;
+
+    // Cap nhat di chuyen cho toan bo player
+    for (const player of this.players.values()) {
+      let mx = player.currentInput.mx;
+      let my = player.currentInput.my;
+
+      // Chuan hoa vector huong
+      const len = Math.hypot(mx, my);
+      if (len > 1) {
+        mx /= len;
+        my /= len;
+      }
+
+      player.vx = mx * S.CONST.MOVE_SPEED;
+      player.vy = my * S.CONST.MOVE_SPEED;
+
+      player.x += player.vx * dt;
+      player.y += player.vy * dt;
+
+      // Gioi han trong ban do 0 -> MAP_TILES * TILE
+      const maxCoord = S.CONST.MAP_TILES * S.CONST.TILE;
+      player.x = Math.max(16, Math.min(maxCoord - 16, player.x));
+      player.y = Math.max(16, Math.min(maxCoord - 16, player.y));
+
+      player.aim = player.currentInput.aim;
+    }
+  }
+
+  broadcastSnapshot() {
+    if (!this.net) return;
+
+    // Dong goi danh sach tat ca entity nguoi choi
+    const allEnts = [];
+    for (const p of this.players.values()) {
+      allEnts.push({
+        i: p.id,
+        k: 'PLAYER',
+        x: Math.round(p.x * 10) / 10,
+        y: Math.round(p.y * 10) / 10,
+        a: Math.round(p.aim * 100) / 100,
+        hp: p.hp,
+        hm: p.hpMax,
+        n: p.name,
+        c: p.colors
+      });
+    }
+
+    for (const player of this.players.values()) {
+      const otherEnts = allEnts.filter(e => e.i !== player.id);
+
+      const snapMsg = {
+        t: S.MSG.SNAP,
+        tick: this.currentTick,
+        ack: player.lastInputSeq,
+        me: {
+          id: player.id,
+          x: Math.round(player.x * 10) / 10,
+          y: Math.round(player.y * 10) / 10,
+          vx: Math.round(player.vx * 10) / 10,
+          vy: Math.round(player.vy * 10) / 10,
+          aim: Math.round(player.aim * 100) / 100,
+          hp: player.hp,
+          hm: player.hpMax,
+          stamina: player.stamina,
+          name: player.name,
+          colors: player.colors
+        },
+        ents: otherEnts,
+        zone: null,
+        ev: []
+      };
+
+      this.net.send(player.client, snapMsg);
+    }
+  }
+
   onClientConnect(client) {
-    // Neu chua co host, client dau tien la host
     if (this.hostId === null || client.isLocal) {
       if (this.hostId === null) {
         this.hostId = client.id;
@@ -45,18 +153,30 @@ class MatchManager {
     const isHost = (this.hostId === client.id);
     const defaultName = `Hai tac #${client.id}`;
 
+    // Vi tri xuat phat tam tren nen phang (240, 135)
     const player = {
       id: client.id,
       name: defaultName,
       colors: { hat: '#d9534f', shirt: '#337ab7', hair: '#292b2c' },
       isHost: isHost,
       client: client,
-      joined: false
+      joined: false,
+
+      // Vat ly & di chuyen
+      x: 240,
+      y: 135,
+      vx: 0,
+      vy: 0,
+      aim: 0,
+      hp: S.CONST.HP_BASE,
+      hpMax: S.CONST.HP_BASE,
+      stamina: S.CONST.STAMINA_MAX,
+      lastInputSeq: 0,
+      currentInput: { mx: 0, my: 0, aim: 0, btn: 0 }
     };
 
     this.players.set(client.id, player);
 
-    // Gui welcome
     this.net.send(client, {
       t: S.MSG.WELCOME,
       you: client.id,
@@ -67,16 +187,12 @@ class MatchManager {
       dev: !!this.flags.dev
     });
 
-    // Neu dang o lobby thi gui trang thai lobby
-    if (this.phase === S.PHASE.LOBBY) {
-      this.broadcastLobby();
-    }
+    this.broadcastLobby();
   }
 
   onClientDisconnect(client) {
     this.players.delete(client.id);
 
-    // Neu host thoat, chuyen quyen host cho nguoi tiep theo
     if (this.hostId === client.id) {
       const remaining = Array.from(this.players.values());
       if (remaining.length > 0) {
@@ -87,9 +203,7 @@ class MatchManager {
       }
     }
 
-    if (this.phase === S.PHASE.LOBBY) {
-      this.broadcastLobby();
-    }
+    this.broadcastLobby();
   }
 
   onClientMessage(client, msg) {
@@ -99,6 +213,10 @@ class MatchManager {
     switch (msg.t) {
       case S.MSG.JOIN:
         this.handleJoin(player, msg);
+        break;
+
+      case S.MSG.IN:
+        this.handleInput(player, msg);
         break;
 
       case S.MSG.CFG:
@@ -121,6 +239,21 @@ class MatchManager {
         });
         break;
     }
+  }
+
+  handleInput(player, msg) {
+    player.lastInputSeq = typeof msg.seq === 'number' ? msg.seq : player.lastInputSeq;
+
+    let mx = Number(msg.mx) || 0;
+    let my = Number(msg.my) || 0;
+    let aim = Number(msg.aim) || 0;
+    let btn = Number(msg.btn) || 0;
+
+    // Kẹp mx, my trong khoang -1..1
+    mx = Math.max(-1, Math.min(1, mx));
+    my = Math.max(-1, Math.min(1, my));
+
+    player.currentInput = { mx, my, aim, btn };
   }
 
   handleJoin(player, msg) {
@@ -159,7 +292,6 @@ class MatchManager {
     if (!player.isHost) return;
     if (this.phase !== S.PHASE.LOBBY) return;
 
-    // Chuyen trang thai
     if (this.flags.noLaunch) {
       this.phase = S.PHASE.PLAY;
     } else {

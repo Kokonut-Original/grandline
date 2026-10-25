@@ -129,6 +129,7 @@ const wss = new WebSocketServer({ server });
 const net = new NetManager();
 const match = new MatchManager(flags);
 match.setNet(net);
+match.startLoop();
 
 wss.on('connection', (ws, req) => {
   const client = net.handleConnection(
