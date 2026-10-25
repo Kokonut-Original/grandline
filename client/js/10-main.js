@@ -84,9 +84,25 @@
         OP.PRED.update();
       }
 
-      // Render the gioi & thuc the
+      // Cap nhat camera theo nguoi choi
+      if (OP.GAME.state.me && OP.CAM && OP.CAM.follow) {
+        OP.CAM.follow(OP.GAME.state.me.x, OP.GAME.state.me.y, 0.15);
+      }
+
+      // Xoa man hinh worldCanvas
+      worldCtx.clearRect(0, 0, 480, 270);
+
+      // Render the gioi & thuc the co su dung camera
+      if (OP.CAM && OP.CAM.apply) {
+        OP.CAM.apply(worldCtx);
+      }
+
       if (OP.R && OP.R.renderEntities) {
         OP.R.renderEntities(worldCtx);
+      }
+
+      if (OP.CAM && OP.CAM.restore) {
+        OP.CAM.restore(worldCtx);
       }
 
       // Render HUD va bang debug F3

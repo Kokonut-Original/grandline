@@ -1,6 +1,6 @@
 # TIẾN ĐỘ & KẾ HOẠCH
 
-## TASK HIỆN TẠI: M02-T01
+## TASK HIỆN TẠI: M02-T02
 
 ## Quyết định đã chốt
 
@@ -57,7 +57,7 @@
 
 ### M02 – Pixel art & render
 
-- [ ] **T01 Lõi pixel**
+- [x] **T01 Lõi pixel**
   - Mục tiêu: pixelGrid tự sinh viền đen, cache, OP.SPR, camera, phóng to theo số nguyên.
 - [ ] **T02 Sprite người chơi**
   - Mục tiêu: chibi 16×24, 3 hướng, walk/bounce, đổi màu nón/áo/tóc.
@@ -172,3 +172,4 @@ Mỗi task trái phải có: data đầy đủ, server logic, hiệu ứng clien
 | M01-T04 | reports/M01-T04.md | 2026-10-26 |
 | M01-T05 | reports/M01-T05.md | 2026-10-26 |
 | M01-TONG-KET | reports/M01-TONG-KET.md | 2026-10-26 |
+| M02-T01 | reports/M02-T01.md | 2026-10-26 |
