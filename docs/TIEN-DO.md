@@ -1,6 +1,6 @@
 # TIẾN ĐỘ & KẾ HOẠCH
 
-## TASK HIỆN TẠI: M03B-T01
+## TASK HIỆN TẠI: M03B-T02
 
 ## Quyết định đã chốt
 
@@ -80,9 +80,12 @@
 
 ### M03B – Nâng cấp đồ họa (Mini Dungeon Slayer Reference)
 
-- [ ] **T01 Nền tảng màu, tile, bóng, font**
+- [x] **T01 Nền tảng màu, tile, bóng, font**
   - Mục tiêu: Palette 4 tông chuẩn ART-REF, độ sáng DEEP < SHALLOW < GRASS < SAND, tile 17 loại có 3 biến thể hash2, viền #160e22, bóng elip rgba(0,0,0,.35), font tiếng Việt có dấu 2 lượt stroke+fill.
   - Xong khi: run_all PASS, kiểm tra độ sáng & biến thể tile PASS, bóng elip hiện trên cỏ, text có dấu không lỗi.
+- [x] **T01b Chỉnh màu và tile cỏ, bỏ viền lưới, tối ưu HUD**
+  - Mục tiêu: GRASS giảm bão hòa ~#4f8f3c, bỏ viền lưới ca-rô, chi tiết 15-20% với 4 kiểu nhỏ, bờ biển mềm, HUD F3 gọn, xóa chữ thử font.
+  - Xong khi: run_all PASS, độ sáng DEEP < SHALLOW < GRASS < SAND, F3 chỉ hiện khi bật.
 - [ ] **T02 Nhà top-down**
   - Mục tiêu: Nhà 2D top-down surviv.io, mái che + skylight, thềm gạch, thùng crate, barrel, hiệu ứng biến mất mái khi vào trong.
   - Xong khi: đứng ngoài thấy mái, bước vào trong mái mờ dần thấy nội thất.

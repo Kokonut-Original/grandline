@@ -89,7 +89,7 @@
     }
 
     // 3. Ve bang debug F3 neu duoc bat hoac co ?debug=1
-    if (showDebug || OP.debug) {
+    if (showDebug) {
       drawDebugOverlay(ctx, me, state);
     }
   };
@@ -242,7 +242,7 @@
 
     ctx.save();
     ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
-    ctx.fillRect(4, 4, 220, 84);
+    ctx.fillRect(4, 4, 110, 64);
 
     const fpsColor = fps >= 55 ? '#5ac54f' : (fps >= 30 ? '#f4c430' : '#da3633');
     drawOutlinedText(ctx, `FPS:  ${fps}`, x, y, 12, fpsColor, '#160e22');
@@ -263,8 +263,6 @@
       y += 12;
     }
 
-    // Chuoi kiem chung font tieng Viet day du dau theo yeu cau task
-    drawOutlinedText(ctx, 'Hải Tặc Mũ Rơm ắằẳẵặ ếềểễệ ơờởỡợ ưừửữự', x, y, 11, '#ffd23d', '#160e22');
 
     ctx.restore();
   }

@@ -45,17 +45,17 @@
     // ==========================================
     TERRAIN: {
       DEEP: {
-        shadow: '#133667',
-        mid: '#1a498b',
-        high: '#2563b0',
-        accent: '#3b82d6',
+        shadow: '#0f2c59',
+        mid: '#163e77',
+        high: '#20559e',
+        accent: '#2f74cf',
         name: 'Biển sâu'
       },
       SHALLOW: {
-        shadow: '#22789f',
-        mid: '#369ec9',
-        high: '#5ec3ec',
-        accent: '#a2e4ff',
+        shadow: '#1b5a78',
+        mid: '#287ea6',
+        high: '#43a5d4',
+        accent: '#8be0ff',
         name: 'Nước nông'
       },
       SAND: {
@@ -66,10 +66,10 @@
         name: 'Cát biển'
       },
       GRASS: {
-        shadow: '#327c24',
-        mid: '#4eb83a',
-        high: '#70d654',
-        accent: '#bbf797',
+        shadow: '#437a33',
+        mid: '#4f8f3c',
+        high: '#68a94a',
+        accent: '#fef08a',
         name: 'Đồng cỏ'
       },
       DIRT: {
@@ -203,12 +203,12 @@
     SKIN_SHADOW: '#c98a58',
     EYE_BLACK: '#160e22',
     EYE_WHITE: '#ffffff',
-    WATER_DEEP: '#1a498b',
-    WATER_SHALLOW: '#369ec9',
+    WATER_DEEP: '#163e77',
+    WATER_SHALLOW: '#287ea6',
     SAND_LIGHT: '#fae49e',
     SAND_DARK: '#e2c275',
-    GRASS_LIGHT: '#70d654',
-    GRASS_DARK: '#4eb83a',
+    GRASS_LIGHT: '#68a94a',
+    GRASS_DARK: '#4f8f3c',
     ROCK_LIGHT: '#94a4ba',
     ROCK_DARK: '#6b7a90',
     WOOD_LIGHT: '#9e5f2e',

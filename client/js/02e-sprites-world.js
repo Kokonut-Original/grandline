@@ -50,6 +50,11 @@
     ]
   ];
 
+  const P_G0 = new Array(16).fill('MMMMMMMMMMMMMMMM');
+  const P_G1 = P_G0.slice(); P_G1[6] = 'MMMMMMMMAAMMMMMM'; P_G1[7] = 'MMMMMMMMAAMMMMMM';
+  const P_G2 = P_G0.slice(); P_G2[6] = 'MMMMMMHHMMMMMMMM'; P_G2[7] = 'MMMMMMSHMMMMMMMM';
+  const PATTERNS_GRASS = [P_G0, P_G1, P_G2];
+
   const PATTERNS_GROUND = [
     // v0: Nen tron co mep sang tren/trai, mep toi duoi/phai
     [
@@ -199,7 +204,8 @@
       };
 
       let patterns = PATTERNS_GROUND;
-      if (def.style === 'water') patterns = PATTERNS_WATER;
+      if (def.pal === 'GRASS') patterns = PATTERNS_GRASS;
+      else if (def.style === 'water') patterns = PATTERNS_WATER;
       else if (def.style === 'wood') patterns = PATTERNS_WOOD;
       else if (def.style === 'brick') patterns = PATTERNS_BRICK;
 
