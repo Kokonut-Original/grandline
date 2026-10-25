@@ -1,6 +1,6 @@
 # TIẾN ĐỘ & KẾ HOẠCH
 
-## TASK HIỆN TẠI: M00-T02
+## TASK HIỆN TẠI: M00-T03
 
 ## Quyết định đã chốt
 
@@ -32,7 +32,7 @@
 - [x] **T01 Khung dự án**
   - Mục tiêu: tạo thư mục, package.json, server.js phát file tĩnh. index.html có 3 lớp hiển thị và nạp đủ script (file client lúc này chỉ đăng ký namespace).
   - Xong khi: mở localhost:8080 thấy chữ "OP-BR READY" bằng font VT323 trên uiCanvas, console không lỗi.
-- [ ] **T02 Shared nền**
+- [x] **T02 Shared nền**
   - Mục tiêu: shared 00–05 đúng BIEN-CHUNG.
   - Xong khi: `node -e "require('./shared/...')"` chạy được, trên trình duyệt `OP.S.CONST.TILE === 16`.
 - [ ] **T03 Bộ test**
@@ -163,3 +163,4 @@ Mỗi task trái phải có: data đầy đủ, server logic, hiệu ứng clien
 | Task | File | Ngày |
 |---|---|---|
 | M00-T01 | reports/M00-T01.md | 2026-10-26 |
+| M00-T02 | reports/M00-T02.md | 2026-10-26 |

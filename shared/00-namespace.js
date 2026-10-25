@@ -4,5 +4,8 @@
 
 (function (root) {
   'use strict';
-  root.OP_SHARED = root.OP_SHARED || {};
+  const S = root.OP_SHARED = root.OP_SHARED || {};
+  if (typeof module !== 'undefined' && module.exports) {
+    module.exports = S;
+  }
 })(typeof globalThis !== 'undefined' ? globalThis : window);
