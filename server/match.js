@@ -13,6 +13,7 @@ const S = globalThis.OP_SHARED;
 const { packSnapshot } = require('./snapshot.js');
 const logger = require('./log.js');
 const World = require('./world.js');
+const physics = require('./physics.js');
 
 class MatchManager {
   constructor(flags = {}) {
@@ -103,31 +104,10 @@ class MatchManager {
   tick(dt) {
     this.currentTick++;
 
-    const maxCoord = S.CONST.MAP_TILES * S.CONST.TILE;
-
+    const isLobby = (this.phase === S.PHASE.LOBBY);
     for (const player of this.players.values()) {
-      // Neu dang rot mang thi tam thoi khong nhan input moi
-      if (player.disconnectedAt) continue;
-
-      let mx = player.currentInput.mx;
-      let my = player.currentInput.my;
-
-      const len = Math.hypot(mx, my);
-      if (len > 1) {
-        mx /= len;
-        my /= len;
-      }
-
-      player.vx = mx * S.CONST.MOVE_SPEED;
-      player.vy = my * S.CONST.MOVE_SPEED;
-
-      player.x += player.vx * dt;
-      player.y += player.vy * dt;
-
-      player.x = Math.max(16, Math.min(maxCoord - 16, player.x));
-      player.y = Math.max(16, Math.min(maxCoord - 16, player.y));
-
-      player.aim = player.currentInput.aim;
+      player.inLobby = isLobby;
+      physics.tickPlayer(player, this.world, dt);
     }
   }
 

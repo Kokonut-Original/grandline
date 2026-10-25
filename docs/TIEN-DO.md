@@ -1,6 +1,6 @@
 # TIẾN ĐỘ & KẾ HOẠCH
 
-## TASK HIỆN TẠI: M03-T03
+## TASK HIỆN TẠI: M03-T04
 
 ## Quyết định đã chốt
 
@@ -72,7 +72,7 @@
   - Xong khi: hash map giống nhau giữa node và trình duyệt với cùng seed (có test).
 - [x] **T02 Render map**
   - Mục tiêu: render map theo chunk, minimap, bản đồ lớn (Tab).
-- [ ] **T03 Va chạm & nước**
+- [x] **T03 Va chạm & nước**
   - Mục tiêu: va chạm, trạng thái nước, bơi, chết đuối, thể lực, cát lún, băng trơn.
   - Xong khi: test water.test.js PASS.
 - [ ] **T04 Đồ vật trên đảo**
@@ -178,3 +178,4 @@ Mỗi task trái phải có: data đầy đủ, server logic, hiệu ứng clien
 | M02-TONG-KET | reports/M02-TONG-KET.md | 2026-10-26 |
 | M03-T01 | reports/M03-T01.md | 2026-10-26 |
 | M03-T02 | reports/M03-T02.md | 2026-10-26 |
+| M03-T03 | reports/M03-T03.md | 2026-10-26 |
