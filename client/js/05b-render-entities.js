@@ -14,9 +14,12 @@
     const state = OP.GAME && OP.GAME.state;
     if (!state) return;
 
-    const me = state.me;
+    // 1. Ve cay coi, nha cua, ruong tren dao neu co map
+    if (state.map) {
+      drawWorldObjects(ctx, state.map);
+    }
 
-    // 1. Ve cac thuc the khac
+    // 2. Ve cac thuc the khac
     if (state.ents) {
       for (const ent of state.ents.values()) {
         if (ent.k === 'PLAYER') {
@@ -25,11 +28,46 @@
       }
     }
 
-    // 2. Ve chinh minh (me)
-    if (me) {
-      drawPlayer(ctx, me, true);
+    // 3. Ve chinh minh (me)
+    if (state.me) {
+      drawPlayer(ctx, state.me, true);
     }
   };
+
+  function drawWorldObjects(ctx, map) {
+    if (!OP.SPR || !OP.SPR.draw) return;
+    const cam = OP.CAM;
+
+    // Ve ruong bau
+    if (map.chests) {
+      for (let i = 0; i < map.chests.length; i++) {
+        const c = map.chests[i];
+        if (!cam || cam.isInView(c.x, c.y, 24)) {
+          OP.SPR.draw(ctx, `chest_${c.tier || 'wood'}`, 0, c.x, c.y);
+        }
+      }
+    }
+
+    // Ve nha cua
+    if (map.houses) {
+      for (let i = 0; i < map.houses.length; i++) {
+        const h = map.houses[i];
+        if (!cam || cam.isInView(h.x, h.y, 40)) {
+          OP.SPR.draw(ctx, h.type || 'house_wood', 0, h.x, h.y);
+        }
+      }
+    }
+
+    // Ve cay coi
+    if (map.trees) {
+      for (let i = 0; i < map.trees.length; i++) {
+        const tr = map.trees[i];
+        if (!cam || cam.isInView(tr.x, tr.y, 32)) {
+          OP.SPR.draw(ctx, tr.type || 'tree_palm', 0, tr.x, tr.y);
+        }
+      }
+    }
+  }
 
   function getDirectionAndFlip(aim) {
     let a = (typeof aim === 'number') ? aim : Math.PI / 2;

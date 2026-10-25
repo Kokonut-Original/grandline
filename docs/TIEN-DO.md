@@ -1,6 +1,6 @@
 # TIẾN ĐỘ & KẾ HOẠCH
 
-## TASK HIỆN TẠI: M03-T04
+## TASK HIỆN TẠI: M04-T01
 
 ## Quyết định đã chốt
 
@@ -75,7 +75,7 @@
 - [x] **T03 Va chạm & nước**
   - Mục tiêu: va chạm, trạng thái nước, bơi, chết đuối, thể lực, cát lún, băng trơn.
   - Xong khi: test water.test.js PASS.
-- [ ] **T04 Đồ vật trên đảo**
+- [x] **T04 Đồ vật trên đảo**
   - Mục tiêu: nhà, cây, điểm loot/rương/boss/bến theo từng đảo.
 
 ### M04 – Chiến đấu cơ bản
@@ -179,3 +179,5 @@ Mỗi task trái phải có: data đầy đủ, server logic, hiệu ứng clien
 | M03-T01 | reports/M03-T01.md | 2026-10-26 |
 | M03-T02 | reports/M03-T02.md | 2026-10-26 |
 | M03-T03 | reports/M03-T03.md | 2026-10-26 |
+| M03-T04 | reports/M03-T04.md | 2026-10-26 |
+| M03-TONG-KET | reports/M03-TONG-KET.md | 2026-10-26 |

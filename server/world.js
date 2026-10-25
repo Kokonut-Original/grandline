@@ -93,6 +93,22 @@ class World {
     return this.map ? this.map.docks : [];
   }
 
+  getTrees() {
+    return this.map ? this.map.trees : [];
+  }
+
+  getHouses() {
+    return this.map ? this.map.houses : [];
+  }
+
+  getChests() {
+    return this.map ? this.map.chests : [];
+  }
+
+  getBosses() {
+    return this.map ? this.map.bosses : [];
+  }
+
   getIslands() {
     return this.map ? this.map.islands : {};
   }

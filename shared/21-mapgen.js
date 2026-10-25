@@ -1,5 +1,5 @@
 // shared/21-mapgen.js
-// Sinh ban do 320x320 tile tu seed gom 10 dao, dai nuoc nong, bo bien gon va ben thuyen.
+// Sinh ban do 320x320 tile tu seed gom 10 dao, cay coi, nha cua, ruong bau, boss spawn va ben thuyen.
 // Phu thuoc: shared/00-namespace.js, shared/01-constants.js, shared/02-enums.js, shared/05-rng.js, shared/14-data-islands.js.
 
 (function (root) {
@@ -12,7 +12,6 @@
   const MAP_W = CONST.MAP_TILES || 320;
   const MAP_H = CONST.MAP_TILES || 320;
 
-  // Thuat toan bam FNV-1a 32-bit de kiem tra tinh dong nhat giua Node va Browser
   function fnv1a(uint8Arr) {
     let hash = 2166136261;
     for (let i = 0; i < uint8Arr.length; i++) {
@@ -30,12 +29,15 @@
 
     const totalTiles = MAP_W * MAP_H;
     const tiles = new Uint8Array(totalTiles);
-    // Mac dinh toan bo ban do la bien sau (DEEP = 0)
     tiles.fill(T.DEEP);
 
     const islands = S.ISLANDS || {};
     const docks = [];
     const spawns = [];
+    const trees = [];
+    const houses = [];
+    const chests = [];
+    const bosses = [];
 
     // Duyet qua tung dao va tao dia hinh
     for (const key in islands) {
@@ -44,11 +46,10 @@
       const cy = isl.cy;
       const baseR = isl.radius;
 
-      // Cac he so pha gon song bo bien
       const p1 = rng.next() * Math.PI * 2;
       const p2 = rng.next() * Math.PI * 2;
       const p3 = rng.next() * Math.PI * 2;
-      const shallowWidth = 3; // Dai nuoc nong rong 3 tile quanh dao
+      const shallowWidth = 3;
 
       const boundR = Math.ceil(baseR + shallowWidth + 4);
       const minX = Math.max(1, cx - boundR);
@@ -62,7 +63,6 @@
           const dy = y - cy;
           const angle = Math.atan2(dy, dx);
 
-          // Ban kinh bien doi tao gon bo bien tu nhien
           const wave = 1.0 +
             0.14 * Math.sin(3 * angle + p1) +
             0.08 * Math.cos(5 * angle + p2) +
@@ -73,22 +73,19 @@
           const idx = y * MAP_W + x;
 
           if (dist <= rCoast) {
-            // Vung dat lien cua dao
             let tileType = isl.baseTile;
 
-            // Xử lý tiểu vùng đặc trưng (biome)
             if (isl.id === 'fire_ice') {
               tileType = (dx > 0) ? T.LAVA : T.ICE;
             } else if (isl.id === 'canal_city') {
               if (Math.abs(dx) <= 1 || Math.abs(dy) <= 1) {
-                tileType = T.SHALLOW; // Kenh nuoc nong
+                tileType = T.SHALLOW;
               } else if (Math.abs(dx) === 2 || Math.abs(dy) === 2) {
-                tileType = T.BRIDGE; // Cau bac qua kenh
+                tileType = T.BRIDGE;
               } else {
                 tileType = T.FLOOR;
               }
             } else if (isl.id === 'fortress') {
-              // Tuong thanh quanh ria dao
               if (dist >= rCoast - 2 && dist <= rCoast) {
                 tileType = T.WALL;
               } else {
@@ -105,7 +102,6 @@
             tiles[idx] = tileType;
 
           } else if (dist <= rCoast + shallowWidth) {
-            // Dai nuoc nong bao quanh dao (neu chua bi ghi de boi dat)
             if (tiles[idx] === T.DEEP) {
               tiles[idx] = T.SHALLOW;
             }
@@ -113,7 +109,7 @@
         }
       }
 
-      // Diem spawn tren dao (vi tri tam dao hoac canh tam)
+      // 1. Diem spawn nguoi choi
       spawns.push({
         islandId: isl.id,
         tx: cx,
@@ -122,13 +118,28 @@
         y: cy * 16 + 8
       });
 
-      // Tao ben thuyen (1-2 ben huong ra bien ngoai)
+      // 2. Diem spawn Boss cua dao
+      if (isl.boss) {
+        const bAngle = rng.next() * Math.PI * 2;
+        const bDist = baseR * 0.45;
+        const btx = Math.round(cx + Math.cos(bAngle) * bDist);
+        const bty = Math.round(cy + Math.sin(bAngle) * bDist);
+        bosses.push({
+          id: isl.boss,
+          islandId: isl.id,
+          tx: btx,
+          ty: bty,
+          x: btx * 16 + 8,
+          y: bty * 16 + 8
+        });
+      }
+
+      // 3. Ben thuyen (dock)
       const dockAngle = (isl.id === 'fortress') ? (Math.PI / 2) : Math.atan2(cy - 160, cx - 160);
       const dockDist = baseR;
       const dockX = Math.round(cx + Math.cos(dockAngle) * (dockDist + 1));
       const dockY = Math.round(cy + Math.sin(dockAngle) * (dockDist + 1));
 
-      // Dat tile ben thuyen 2x2
       for (let dy = 0; dy <= 1; dy++) {
         for (let dx = 0; dx <= 1; dx++) {
           const dtx = dockX + dx;
@@ -146,6 +157,83 @@
         x: dockX * 16 + 8,
         y: dockY * 16 + 8
       });
+
+      // 4. Cay coi theo biome (3-5 cay moi dao)
+      let treeType = 'tree_palm';
+      if (isl.id === 'winter') treeType = 'tree_pine';
+      else if (isl.id === 'jungle' || isl.id === 'giant') treeType = 'tree_jungle';
+
+      const treeCount = 4;
+      for (let i = 0; i < treeCount; i++) {
+        const tAng = (i / treeCount) * Math.PI * 2 + rng.next() * 0.4;
+        const tDist = baseR * (0.55 + rng.next() * 0.25);
+        const ttx = Math.round(cx + Math.cos(tAng) * tDist);
+        const tty = Math.round(cy + Math.sin(tAng) * tDist);
+        const tidx = tty * MAP_W + ttx;
+
+        // Chi dat cay tren dat lien
+        if (tiles[tidx] !== T.DEEP && tiles[tidx] !== T.SHALLOW && tiles[tidx] !== T.WALL && tiles[tidx] !== T.DOCK) {
+          tiles[tidx] = T.TREE; // Dat vat can TREE vao ma tran
+          trees.push({
+            type: treeType,
+            islandId: isl.id,
+            tx: ttx,
+            ty: tty,
+            x: ttx * 16 + 8,
+            y: tty * 16 + 8
+          });
+        }
+      }
+
+      // 5. Nha cua (1 nha moi dao)
+      let houseType = 'house_wood';
+      if (isl.id === 'fortress') houseType = 'house_stone';
+      else if (isl.id === 'canal_city' || isl.id === 'samurai') houseType = 'house_small';
+
+      const hAng = rng.next() * Math.PI * 2;
+      const hDist = baseR * 0.35;
+      const htx = Math.round(cx + Math.cos(hAng) * hDist);
+      const hty = Math.round(cy + Math.sin(hAng) * hDist);
+      const hidx = hty * MAP_W + htx;
+
+      if (tiles[hidx] !== T.DEEP && tiles[hidx] !== T.SHALLOW && tiles[hidx] !== T.WALL) {
+        tiles[hidx] = T.HOUSE_WALL;
+        houses.push({
+          type: houseType,
+          islandId: isl.id,
+          tx: htx,
+          ty: hty,
+          x: htx * 16 + 8,
+          y: hty * 16 + 8
+        });
+      }
+
+      // 6. Ruong bau tren dao (2-3 ruong)
+      const chestCount = (isl.id === 'fortress') ? 4 : 2;
+      for (let i = 0; i < chestCount; i++) {
+        const cAng = (i / chestCount) * Math.PI * 2 + rng.next() * 0.5;
+        const cDist = baseR * (0.4 + rng.next() * 0.3);
+        const ctx = Math.round(cx + Math.cos(cAng) * cDist);
+        const cty = Math.round(cy + Math.sin(cAng) * cDist);
+        const cidx = cty * MAP_W + ctx;
+
+        if (tiles[cidx] !== T.DEEP && tiles[cidx] !== T.SHALLOW && tiles[cidx] !== T.WALL) {
+          let tier = 'wood';
+          if (isl.id === 'fortress') tier = (i === 0) ? 'gold' : 'iron';
+          else if (i === 1) tier = 'iron';
+
+          chests.push({
+            id: `chest_${isl.id}_${i}`,
+            tier: tier,
+            islandId: isl.id,
+            tx: ctx,
+            ty: cty,
+            x: ctx * 16 + 8,
+            y: cty * 16 + 8,
+            opened: false
+          });
+        }
+      }
     }
 
     const hash = fnv1a(tiles);
@@ -158,7 +246,11 @@
       hash: hash,
       islands: islands,
       docks: docks,
-      spawns: spawns
+      spawns: spawns,
+      trees: trees,
+      houses: houses,
+      chests: chests,
+      bosses: bosses
     };
   }
 
