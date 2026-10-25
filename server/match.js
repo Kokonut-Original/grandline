@@ -8,6 +8,7 @@ require('../shared/00-namespace.js');
 require('../shared/01-constants.js');
 require('../shared/02-enums.js');
 require('../shared/03-protocol.js');
+require('../shared/14-data-islands.js');
 
 const S = globalThis.OP_SHARED;
 const { packSnapshot } = require('./snapshot.js');
@@ -291,6 +292,10 @@ class MatchManager {
         this.handleChat(player, msg);
         break;
 
+      case 'tp':
+        this.handleTeleport(player, msg);
+        break;
+
       case S.MSG.PING:
         this.net.send(client, {
           t: S.MSG.PONG,
@@ -368,10 +373,60 @@ class MatchManager {
     });
   }
 
+  handleTeleport(player, msg) {
+    if (!player) return;
+    let targetX = player.x;
+    let targetY = player.y;
+    let targetName = 'tọa độ mới';
+
+    if (typeof msg.island === 'string' && S.ISLANDS && S.ISLANDS[msg.island]) {
+      const isl = S.ISLANDS[msg.island];
+      targetX = isl.cx * 16 + 8;
+      targetY = isl.cy * 16 + 8;
+      targetName = isl.name;
+    } else if (typeof msg.x === 'number' && typeof msg.y === 'number') {
+      targetX = msg.x;
+      targetY = msg.y;
+    } else if (typeof msg.tx === 'number' && typeof msg.ty === 'number') {
+      targetX = msg.tx * 16 + 8;
+      targetY = msg.ty * 16 + 8;
+    }
+
+    player.x = targetX;
+    player.y = targetY;
+    player.vx = 0;
+    player.vy = 0;
+
+    this.net.send(player, {
+      t: S.MSG.CHAT,
+      from: 'Hệ thống',
+      text: `Đã dịch chuyển tới ${targetName} (${Math.round(targetX)}, ${Math.round(targetY)})`
+    });
+  }
+
   handleChat(player, msg) {
     if (typeof msg.text !== 'string') return;
     const cleanText = msg.text.trim().slice(0, 120);
     if (!cleanText) return;
+
+    // Xu ly lenh dev /tp
+    if (cleanText.startsWith('/tp')) {
+      const parts = cleanText.split(/\s+/);
+      if (parts.length >= 2) {
+        const target = parts[1].toLowerCase();
+        if (S.ISLANDS && S.ISLANDS[target]) {
+          this.handleTeleport(player, { island: target });
+          return;
+        } else if (parts.length >= 3) {
+          const tx = parseInt(parts[1], 10);
+          const ty = parseInt(parts[2], 10);
+          if (!isNaN(tx) && !isNaN(ty)) {
+            this.handleTeleport(player, { tx, ty });
+            return;
+          }
+        }
+      }
+    }
 
     this.net.broadcast({
       t: S.MSG.CHAT,

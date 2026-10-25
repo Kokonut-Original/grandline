@@ -19,6 +19,7 @@
 
     lobbyRoot = document.createElement('div');
     lobbyRoot.id = 'lobby-container';
+    lobbyRoot.style.display = 'none'; // Mac dinh an lobby de khong che tam nhin test
 
     // 1. Tieu de
     const titleEl = document.createElement('div');
@@ -141,6 +142,87 @@
 
     uiRoot.appendChild(lobbyRoot);
 
+    // ==========================================
+    // MENU DICH CHUYEN 10 DAO VA TOOLBAR TEST
+    // ==========================================
+    const tpContainer = document.createElement('div');
+    tpContainer.id = 'tp-container';
+
+    const btnGroup = document.createElement('div');
+    btnGroup.className = 'tp-btn-group';
+
+    const tpToggleBtn = document.createElement('button');
+    tpToggleBtn.className = 'tp-toggle-btn';
+    tpToggleBtn.textContent = '🏝️ 10 ĐẢO';
+
+    const lobbyToggleBtn = document.createElement('button');
+    lobbyToggleBtn.className = 'tp-toggle-btn';
+    lobbyToggleBtn.textContent = '⚙️ PHÒNG';
+    lobbyToggleBtn.onclick = function () {
+      lobbyRoot.style.display = (lobbyRoot.style.display === 'none' ? 'flex' : 'none');
+    };
+
+    btnGroup.appendChild(tpToggleBtn);
+    btnGroup.appendChild(lobbyToggleBtn);
+    tpContainer.appendChild(btnGroup);
+
+    const tpPanel = document.createElement('div');
+    tpPanel.className = 'tp-panel';
+    tpPanel.style.display = 'none';
+
+    const tpTitle = document.createElement('div');
+    tpTitle.className = 'tp-panel-title';
+    tpTitle.textContent = 'DỊCH CHUYỂN TỚI ĐẢO';
+    tpPanel.appendChild(tpTitle);
+
+    const ISLANDS_LIST = [
+      { id: 'fortress', name: '🏰 Pháo đài Trung Tâm' },
+      { id: 'desert', name: '🏜️ Đảo Sa Mạc' },
+      { id: 'winter', name: '❄️ Đảo Băng' },
+      { id: 'fire_ice', name: '🌋 Đảo Lửa - Băng' },
+      { id: 'canal_city', name: '🚢 Thành phố Kênh' },
+      { id: 'jungle', name: '🦖 Rừng Cổ Đại' },
+      { id: 'mangrove', name: '🌳 Quần đảo Rễ Cây' },
+      { id: 'ghost', name: '👻 Đảo Ma' },
+      { id: 'samurai', name: '⚔️ Đảo Samurai' },
+      { id: 'giant', name: '🗿 Đảo Khổng Lồ' }
+    ];
+
+    for (let i = 0; i < ISLANDS_LIST.length; i++) {
+      const isl = ISLANDS_LIST[i];
+      const btn = document.createElement('button');
+      btn.className = 'tp-island-btn';
+      btn.textContent = isl.name;
+      btn.onclick = function () {
+        OP.NET.send({ t: 'tp', island: isl.id });
+        const S = window.OP_SHARED;
+        if (S && S.ISLANDS && S.ISLANDS[isl.id]) {
+          const d = S.ISLANDS[isl.id];
+          const targetX = d.cx * 16 + 8;
+          const targetY = d.cy * 16 + 8;
+          if (OP.CAM) {
+            OP.CAM.x = targetX;
+            OP.CAM.y = targetY;
+          }
+          if (OP.GAME && OP.GAME.state && OP.GAME.state.me) {
+            OP.GAME.state.me.x = targetX;
+            OP.GAME.state.me.y = targetY;
+            OP.GAME.state.me.vx = 0;
+            OP.GAME.state.me.vy = 0;
+          }
+        }
+        tpPanel.style.display = 'none';
+      };
+      tpPanel.appendChild(btn);
+    }
+
+    tpToggleBtn.onclick = function () {
+      tpPanel.style.display = (tpPanel.style.display === 'none' ? 'flex' : 'none');
+    };
+
+    tpContainer.appendChild(tpPanel);
+    uiRoot.appendChild(tpContainer);
+
     // Lang nghe su kien tu mang
     OP.NET.on('welcome', function (msg) {
       if (msg.isHost) {
@@ -155,8 +237,6 @@
     OP.NET.on('phase', function (msg) {
       if (msg.phase !== 'LOBBY') {
         lobbyRoot.style.display = 'none';
-      } else {
-        lobbyRoot.style.display = 'flex';
       }
     });
   };

@@ -288,3 +288,83 @@ html, body {
   padding: 2px 4px;
   margin-top: 2px;
 }
+
+/* Teleport Menu & Dev Tools */
+#tp-container {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: 100;
+  font-family: 'VT323', monospace;
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.tp-btn-group {
+  display: flex;
+  gap: 4px;
+}
+
+.tp-toggle-btn {
+  background: #1e293b;
+  border: 1px solid #38bdf8;
+  color: #facc15;
+  font-family: 'VT323', monospace;
+  font-size: 13px;
+  padding: 2px 8px;
+  cursor: pointer;
+  border-radius: 3px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+}
+
+.tp-toggle-btn:hover {
+  background: #0284c7;
+  color: #ffffff;
+}
+
+.tp-panel {
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid #38bdf8;
+  border-radius: 4px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-height: 200px;
+  overflow-y: auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.7);
+  width: 155px;
+}
+
+.tp-panel-title {
+  color: #facc15;
+  font-size: 14px;
+  text-align: center;
+  border-bottom: 1px solid #334155;
+  padding-bottom: 2px;
+  margin-bottom: 2px;
+}
+
+.tp-island-btn {
+  background: #1e293b;
+  border: 1px solid #475569;
+  color: #f8fafc;
+  font-family: 'VT323', monospace;
+  font-size: 12px;
+  padding: 2px 6px;
+  cursor: pointer;
+  text-align: left;
+  border-radius: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tp-island-btn:hover {
+  background: #2563eb;
+  border-color: #60a5fa;
+  color: #ffffff;
+}
