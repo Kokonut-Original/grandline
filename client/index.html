@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>One Piece Battleground</title>
+  <link rel="stylesheet" href="/client/style.css">
+</head>
+<body>
+  <div id="game-container">
+    <!-- Lop 1: worldCanvas (the gioi, thuc the, hieu ung) -->
+    <canvas id="worldCanvas" width="480" height="270"></canvas>
+
+    <!-- Lop 2: uiCanvas (HUD, thanh chi so, chu pixel) -->
+    <canvas id="uiCanvas" width="480" height="270"></canvas>
+
+    <!-- Lop 3: #ui-root (DOM HTML/CSS: lobby, tui do, hop thoai, chat) -->
+    <div id="ui-root"></div>
+  </div>
+
+  <!-- Overlay hien thi loi JS -->
+  <div id="error-overlay"></div>
+
+  <!-- 1. Shared 00 -> 05 -->
+  <script src="/shared/00-namespace.js"></script>
+  <script src="/shared/01-constants.js"></script>
+  <script src="/shared/02-enums.js"></script>
+  <script src="/shared/03-protocol.js"></script>
+  <script src="/shared/04-keybinds.js"></script>
+  <script src="/shared/05-rng.js"></script>
+
+  <!-- 2. Shared 10 -> 16 -->
+  <script src="/shared/10-data-fruits.js"></script>
+  <script src="/shared/11-data-weapons.js"></script>
+  <script src="/shared/12-data-items.js"></script>
+  <script src="/shared/13-data-bosses.js"></script>
+  <script src="/shared/14-data-islands.js"></script>
+  <script src="/shared/15-data-boats.js"></script>
+  <script src="/shared/16-data-zone.js"></script>
+
+  <!-- 3. Shared 20 -> 21 -->
+  <script src="/shared/20-rules-damage.js"></script>
+  <script src="/shared/21-mapgen.js"></script>
+
+  <!-- 4. Client JS 00 -> 10 -->
+  <script src="/client/js/00-boot.js"></script>
+  <script src="/client/js/01-net.js"></script>
+  <script src="/client/js/02a-pixel-core.js"></script>
+  <script src="/client/js/02b-palette.js"></script>
+  <script src="/client/js/02c-sprites-chars.js"></script>
+  <script src="/client/js/02d-sprites-items.js"></script>
+  <script src="/client/js/02e-sprites-world.js"></script>
+  <script src="/client/js/02f-sprites-fx.js"></script>
+  <script src="/client/js/03-input.js"></script>
+  <script src="/client/js/04-camera.js"></script>
+  <script src="/client/js/05a-render-map.js"></script>
+  <script src="/client/js/05b-render-entities.js"></script>
+  <script src="/client/js/05c-render-fx.js"></script>
+  <script src="/client/js/06-render-hud.js"></script>
+  <script src="/client/js/07a-ui-lobby.js"></script>
+  <script src="/client/js/07b-ui-inventory.js"></script>
+  <script src="/client/js/07c-ui-dialogs.js"></script>
+  <script src="/client/js/07d-ui-chat.js"></script>
+  <script src="/client/js/07e-ui-spectate.js"></script>
+  <script src="/client/js/07f-ui-endscreen.js"></script>
+  <script src="/client/js/08-audio.js"></script>
+  <script src="/client/js/09-predict.js"></script>
+  <script src="/client/js/10-main.js"></script>
+</body>
+</html>

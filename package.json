@@ -1,0 +1,15 @@
+{
+  "name": "onepiece-br",
+  "version": "0.1.0",
+  "private": true,
+  "description": "One Piece Battleground",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node server/server.js",
+    "dev": "node server/server.js --dev --seed 1",
+    "test": "node server/tests/run.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}
