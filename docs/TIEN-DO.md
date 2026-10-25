@@ -1,6 +1,6 @@
 # TIẾN ĐỘ & KẾ HOẠCH
 
-## TASK HIỆN TẠI: M01-T05
+## TASK HIỆN TẠI: M02-T01
 
 ## Quyết định đã chốt
 
@@ -52,7 +52,7 @@
 - [x] **T04 AOI & rớt mạng**
   - Mục tiêu: AOI, vào lại bằng reconnectKey trong 30 giây, log perf.
   - Xong khi: smoke test 8 client PASS.
-- [ ] **T05 Double Check lớn**
+- [x] **T05 Double Check lớn**
   - Mục tiêu: người dùng test thật 2 máy qua Radmin.
 
 ### M02 – Pixel art & render
@@ -170,3 +170,5 @@ Mỗi task trái phải có: data đầy đủ, server logic, hiệu ứng clien
 | M01-T02 | reports/M01-T02.md | 2026-10-26 |
 | M01-T03 | reports/M01-T03.md | 2026-10-26 |
 | M01-T04 | reports/M01-T04.md | 2026-10-26 |
+| M01-T05 | reports/M01-T05.md | 2026-10-26 |
+| M01-TONG-KET | reports/M01-TONG-KET.md | 2026-10-26 |
