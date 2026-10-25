@@ -1,6 +1,6 @@
 # TIẾN ĐỘ & KẾ HOẠCH
 
-## TASK HIỆN TẠI: M00-T03
+## TASK HIỆN TẠI: M01-T01
 
 ## Quyết định đã chốt
 
@@ -35,7 +35,7 @@
 - [x] **T02 Shared nền**
   - Mục tiêu: shared 00–05 đúng BIEN-CHUNG.
   - Xong khi: `node -e "require('./shared/...')"` chạy được, trên trình duyệt `OP.S.CONST.TILE === 16`.
-- [ ] **T03 Bộ test**
+- [x] **T03 Bộ test**
   - Mục tiêu: viết requirements.txt, run_all.py, check_static.py, check_data.js, tests/run.js (kèm 1 test mẫu), smoke_test.py.
   - Xong khi: run_all PASS. Cố tình thêm `import` vào 1 file client thì check_static báo FAIL.
 
@@ -164,3 +164,5 @@ Mỗi task trái phải có: data đầy đủ, server logic, hiệu ứng clien
 |---|---|---|
 | M00-T01 | reports/M00-T01.md | 2026-10-26 |
 | M00-T02 | reports/M00-T02.md | 2026-10-26 |
+| M00-T03 | reports/M00-T03.md | 2026-10-26 |
+| M00-TONG-KET | reports/M00-TONG-KET.md | 2026-10-26 |

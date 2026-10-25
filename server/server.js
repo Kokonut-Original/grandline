@@ -123,7 +123,38 @@ function serveStatic(req, res) {
 const server = http.createServer(serveStatic);
 const wss = new WebSocketServer({ server });
 
+let nextClientId = 1;
 wss.on('connection', (ws) => {
+  const clientId = nextClientId++;
+  const isHost = (clientId === 1);
+
+  ws.on('message', (data) => {
+    try {
+      const msg = JSON.parse(data.toString());
+      if (msg.t === 'join') {
+        const welcome = {
+          t: 'welcome',
+          you: clientId,
+          seed: flags.seed !== null ? flags.seed : 1,
+          isHost: isHost,
+          reconnectKey: 'rec_' + clientId,
+          cfgHash: 'cfg_init',
+          dev: flags.dev
+        };
+        ws.send(JSON.stringify(welcome));
+      } else if (msg.t === 'ping') {
+        const pong = {
+          t: 'pong',
+          c: msg.c || 0,
+          s: Date.now()
+        };
+        ws.send(JSON.stringify(pong));
+      }
+    } catch (err) {
+      // Bo qua message khong hop le
+    }
+  });
+
   ws.on('error', (err) => {
     // xu ly loi socket co ban
   });
