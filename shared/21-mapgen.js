@@ -94,7 +94,15 @@
             } else if (isl.id === 'desert') {
               tileType = (dist <= baseR * 0.35) ? T.QUICKSAND : T.SAND;
             } else if (isl.id === 'mangrove') {
-              tileType = (dist >= baseR * 0.4 && dist <= baseR * 0.6) ? T.SHALLOW : T.GRASS;
+              if (dist >= baseR * 0.4 && dist <= baseR * 0.6) {
+                if (Math.abs(dx) <= 1 || Math.abs(dy) <= 1) {
+                  tileType = T.BRIDGE;
+                } else {
+                  tileType = T.SHALLOW;
+                }
+              } else {
+                tileType = T.GRASS;
+              }
             } else if (isl.subTile && dist <= baseR * 0.45) {
               tileType = isl.subTile;
             }
@@ -134,39 +142,52 @@
         });
       }
 
-      // 3. Ben thuyen (dock)
-      const dockAngle = (isl.id === 'fortress') ? (Math.PI / 2) : Math.atan2(cy - 160, cx - 160);
-      const dockDist = baseR;
-      const dockX = Math.round(cx + Math.cos(dockAngle) * (dockDist + 1));
-      const dockY = Math.round(cy + Math.sin(dockAngle) * (dockDist + 1));
+      // 3. Ben thuyen (dock) - Dat dung o ria bo bien
+      const dockAngles = (isl.id === 'fortress')
+        ? [Math.PI / 2, -Math.PI / 2]
+        : [Math.atan2(cy - 160, cx - 160)];
 
-      for (let dy = 0; dy <= 1; dy++) {
-        for (let dx = 0; dx <= 1; dx++) {
-          const dtx = dockX + dx;
-          const dty = dockY + dy;
-          if (dtx >= 0 && dtx < MAP_W && dty >= 0 && dty < MAP_H) {
-            tiles[dty * MAP_W + dtx] = T.DOCK;
+      for (let di = 0; di < dockAngles.length; di++) {
+        const dAng = dockAngles[di];
+        const wDock = 1.0 +
+          0.14 * Math.sin(3 * dAng + p1) +
+          0.08 * Math.cos(5 * dAng + p2) +
+          0.04 * Math.sin(7 * dAng + p3);
+        const dockDist = Math.round(baseR * wDock);
+        const dockX = Math.round(cx + Math.cos(dAng) * dockDist);
+        const dockY = Math.round(cy + Math.sin(dAng) * dockDist);
+
+        for (let dy = 0; dy <= 1; dy++) {
+          for (let dx = 0; dx <= 1; dx++) {
+            const dtx = dockX + dx;
+            const dty = dockY + dy;
+            if (dtx >= 0 && dtx < MAP_W && dty >= 0 && dty < MAP_H) {
+              tiles[dty * MAP_W + dtx] = T.DOCK;
+            }
           }
         }
+
+        docks.push({
+          islandId: isl.id,
+          tx: dockX,
+          ty: dockY,
+          x: dockX * 16 + 8,
+          y: dockY * 16 + 8
+        });
       }
 
-      docks.push({
-        islandId: isl.id,
-        tx: dockX,
-        ty: dockY,
-        x: dockX * 16 + 8,
-        y: dockY * 16 + 8
-      });
-
-      // 4. Cay coi theo biome (3-5 cay moi dao)
+      // 4. Cay coi theo biome (scale theo dien tich moi: 8-11 cay moi dao)
       let treeType = 'tree_palm';
       if (isl.id === 'winter') treeType = 'tree_pine';
       else if (isl.id === 'jungle' || isl.id === 'giant') treeType = 'tree_jungle';
 
-      const treeCount = 4;
+      const treeCount = (isl.props && isl.props.trees) ? isl.props.trees : Math.round(baseR * 0.35);
       for (let i = 0; i < treeCount; i++) {
         const tAng = (i / treeCount) * Math.PI * 2 + rng.next() * 0.4;
-        const tDist = baseR * (0.55 + rng.next() * 0.25);
+        let tDist = baseR * (0.35 + rng.next() * 0.4);
+        if (isl.id === 'mangrove' && tDist >= baseR * 0.38 && tDist <= baseR * 0.62) {
+          tDist = (i % 2 === 0) ? (baseR * 0.25) : (baseR * 0.75);
+        }
         const ttx = Math.round(cx + Math.cos(tAng) * tDist);
         const tty = Math.round(cy + Math.sin(tAng) * tDist);
         const tidx = tty * MAP_W + ttx;
@@ -185,42 +206,54 @@
         }
       }
 
-      // 5. Nha cua (1 nha moi dao)
+      // 5. Nha cua (2-3 nha moi dao theo dien tich moi)
       let houseType = 'house_wood';
       if (isl.id === 'fortress') houseType = 'house_stone';
       else if (isl.id === 'canal_city' || isl.id === 'samurai') houseType = 'house_small';
 
-      const hAng = rng.next() * Math.PI * 2;
-      const hDist = baseR * 0.35;
-      const htx = Math.round(cx + Math.cos(hAng) * hDist);
-      const hty = Math.round(cy + Math.sin(hAng) * hDist);
-      const hidx = hty * MAP_W + htx;
+      const houseCount = (isl.props && isl.props.houses) ? isl.props.houses : ((isl.id === 'fortress' || isl.id === 'canal_city' || isl.id === 'giant') ? 3 : 2);
+      for (let i = 0; i < houseCount; i++) {
+        const hAng = (i / houseCount) * Math.PI * 2 + rng.next() * 0.4;
+        let hDist = baseR * (0.28 + rng.next() * 0.35);
+        if (isl.id === 'mangrove' && hDist >= baseR * 0.38 && hDist <= baseR * 0.62) {
+          hDist = (i === 0) ? (baseR * 0.25) : (baseR * 0.75);
+        }
+        const htx = Math.round(cx + Math.cos(hAng) * hDist);
+        const hty = Math.round(cy + Math.sin(hAng) * hDist);
+        const hidx = hty * MAP_W + htx;
 
-      if (tiles[hidx] !== T.DEEP && tiles[hidx] !== T.SHALLOW && tiles[hidx] !== T.WALL) {
-        tiles[hidx] = T.HOUSE_WALL;
-        houses.push({
-          type: houseType,
-          islandId: isl.id,
-          tx: htx,
-          ty: hty,
-          x: htx * 16 + 8,
-          y: hty * 16 + 8
-        });
+        if (tiles[hidx] !== T.DEEP && tiles[hidx] !== T.SHALLOW && tiles[hidx] !== T.WALL && tiles[hidx] !== T.DOCK && tiles[hidx] !== T.TREE) {
+          tiles[hidx] = T.HOUSE_WALL;
+          houses.push({
+            type: houseType,
+            islandId: isl.id,
+            tx: htx,
+            ty: hty,
+            x: htx * 16 + 8,
+            y: hty * 16 + 8
+          });
+        }
       }
 
-      // 6. Ruong bau tren dao (2-3 ruong)
-      const chestCount = (isl.id === 'fortress') ? 4 : 2;
+      // 6. Ruong bau tren dao (scale theo dien tich: fortress 9 ruong, cac dao khac 5 ruong)
+      const chestCount = (isl.props && isl.props.chests) ? isl.props.chests : ((isl.id === 'fortress') ? 9 : 5);
       for (let i = 0; i < chestCount; i++) {
-        const cAng = (i / chestCount) * Math.PI * 2 + rng.next() * 0.5;
-        const cDist = baseR * (0.4 + rng.next() * 0.3);
+        const cAng = (i / chestCount) * Math.PI * 2 + rng.next() * 0.4;
+        let cDist = baseR * (0.25 + rng.next() * 0.45);
+        if (isl.id === 'mangrove' && cDist >= baseR * 0.38 && cDist <= baseR * 0.62) {
+          cDist = (i % 2 === 0) ? (baseR * 0.25) : (baseR * 0.75);
+        }
         const ctx = Math.round(cx + Math.cos(cAng) * cDist);
         const cty = Math.round(cy + Math.sin(cAng) * cDist);
         const cidx = cty * MAP_W + ctx;
 
-        if (tiles[cidx] !== T.DEEP && tiles[cidx] !== T.SHALLOW && tiles[cidx] !== T.WALL) {
+        if (tiles[cidx] !== T.DEEP && tiles[cidx] !== T.SHALLOW && tiles[cidx] !== T.WALL && tiles[cidx] !== T.DOCK && tiles[cidx] !== T.TREE && tiles[cidx] !== T.HOUSE_WALL) {
           let tier = 'wood';
-          if (isl.id === 'fortress') tier = (i === 0) ? 'gold' : 'iron';
-          else if (i === 1) tier = 'iron';
+          if (isl.id === 'fortress') {
+            tier = (i === 0) ? 'gold' : ((i <= 4) ? 'iron' : 'wood');
+          } else {
+            tier = (i < 2) ? 'iron' : 'wood';
+          }
 
           chests.push({
             id: `chest_${isl.id}_${i}`,

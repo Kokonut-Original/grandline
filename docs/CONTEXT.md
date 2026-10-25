@@ -112,7 +112,7 @@ Không có nhân vật One Piece để chọn: người chơi là hải tặc ch
 ## 3. Bản đồ
 
 - Kích thước 320×320 tile, tile 16px.
-- Đảo trung tâm ở chính giữa. 9 đảo còn lại xếp vòng quanh, cách tâm khoảng 105 tile, bán kính mỗi đảo 14–22 tile.
+- Đảo trung tâm (Pháo đài) ở chính giữa với bán kính 32 tile. 9 đảo còn lại xếp vòng quanh, tâm cách tâm map 110 tile, bán kính mỗi đảo cố định từ 24–30 tile (ghost: 24, winter: 25, samurai: 26, fire_ice: 27, canal_city: 27.5, desert: 28, giant: 28.5, jungle: 29, mangrove: 30). Mở rộng diện tích đảo ~2.1–2.4 lần so với bản cũ (14–22 tile) để đủ không gian khám phá, loot và giao tranh cho 32 người chơi.
 - Đường bờ biển gợn ngẫu nhiên theo seed.
 - Quanh mỗi đảo có dải nước nông rộng 2–4 tile, còn lại là biển sâu.
 - Mỗi đảo có 1–2 bến thuyền.

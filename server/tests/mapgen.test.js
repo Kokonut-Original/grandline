@@ -37,15 +37,63 @@ function run() {
   const mapOther = S.MAPGEN.generate(99999);
   assert.notStrictEqual(mapA.hash, mapOther.hash, 'Hai seed khac nhau phai co hash khac nhau');
 
-  // 2. Kiem tra du 10 hon dao
+  // 2. Kiem tra du 10 hon dao va cac rang buoc mo rong dao (M03B-T01c)
   const islands = S.ISLANDS || {};
   const islandKeys = Object.keys(islands);
   assert.strictEqual(islandKeys.length, 10, 'Phai co du 10 hon dao');
 
-  // Dao trung tam phai o tam (160, 160)
+  // Dao trung tam phai o tam (160, 160) va co ban kinh 32 tile
   assert.ok(islands.fortress, 'Phai co dao trung tam fortress');
   assert.strictEqual(islands.fortress.cx, 160, 'Dao trung tam cx phai la 160');
   assert.strictEqual(islands.fortress.cy, 160, 'Dao trung tam cy phai la 160');
+  assert.strictEqual(islands.fortress.radius, 32, 'Fortress radius phai la 32 tile');
+
+  // 9 dao ve tinh phai co ban kinh trong khoang [24, 30] va khong trung lap
+  const satKeys = islandKeys.filter(k => k !== 'fortress');
+  const satRadii = new Set();
+  satKeys.forEach(k => {
+    const r = islands[k].radius;
+    assert.ok(r >= 24 && r <= 30, `Dao ${k} radius phai trong [24, 30], thuc te: ${r}`);
+    assert.ok(!satRadii.has(r), `Dao ${k} khong duoc co radius trung voi dao khac: ${r}`);
+    satRadii.add(r);
+  });
+
+  // Rang buoc b: Mọi dao nam tron trong map, cach mep map >= 20 tile
+  islandKeys.forEach(k => {
+    const isl = islands[k];
+    const minX = isl.cx - isl.radius;
+    const maxX = isl.cx + isl.radius;
+    const minY = isl.cy - isl.radius;
+    const maxY = isl.cy + isl.radius;
+    assert.ok(minX >= 20, `Dao ${k} vi pham mep trai: minX=${minX}`);
+    assert.ok(319 - maxX >= 20, `Dao ${k} vi pham mep phai: maxX=${maxX}`);
+    assert.ok(minY >= 20, `Dao ${k} vi pham mep tren: minY=${minY}`);
+    assert.ok(319 - maxY >= 20, `Dao ${k} vi pham mep duoi: maxY=${maxY}`);
+  });
+
+  // Rang buoc c: Fortress khong cham dao nao khac, cach bo dao gan nhat >= 8 tile
+  satKeys.forEach(k => {
+    const isl = islands[k];
+    const gapToFortress = Math.hypot(isl.cx - 160, isl.cy - 160) - (isl.radius + islands.fortress.radius);
+    assert.ok(gapToFortress >= 8, `Fortress gap voi dao ${k} phai >= 8 tile, thuc te: ${gapToFortress}`);
+  });
+
+  // Rang buoc a: Khoang cach giua bo hai dao ke nhau >= 8 tile
+  for (let i = 0; i < satKeys.length; i++) {
+    const j = (i + 1) % satKeys.length;
+    const isl1 = islands[satKeys[i]];
+    const isl2 = islands[satKeys[j]];
+    const gap = Math.hypot(isl1.cx - isl2.cx, isl1.cy - isl2.cy) - (isl1.radius + isl2.radius);
+    assert.ok(gap >= 8, `Khoang cach bo giua ${satKeys[i]} va ${satKeys[j]} phai >= 8 tile, thuc te: ${gap}`);
+  }
+
+  // Rang buoc d: Moi dao co 1-2 ben thuyen (docks)
+  assert.ok(mapA.docks && mapA.docks.length >= 10, 'Phai co it nhat 10 ben thuyen');
+
+  // Scale vat pham: cay >= 70, ruong >= 45, nha >= 18
+  assert.ok(mapA.trees && mapA.trees.length >= 70, `So cay phai scale theo dien tich moi (>= 70), thuc te: ${mapA.trees.length}`);
+  assert.ok(mapA.chests && mapA.chests.length >= 45, `So ruong phai scale theo dien tich moi (>= 45), thuc te: ${mapA.chests.length}`);
+  assert.ok(mapA.houses && mapA.houses.length >= 18, `So nha phai scale theo dien tich moi (>= 18), thuc te: ${mapA.houses.length}`);
 
   // 3. Kiem tra dia hinh: bien sau, nuoc nong, dat lien
   // Goc ngoai ria map (5, 5) phai la bien sau (DEEP = 0)

@@ -128,8 +128,28 @@
 
         const r = hash2(tx, ty);
 
-        // 1. Ve nen tile
-        if (tileType === 3) { // GRASS
+        // 1. Ve nen tile (Neu la vat can TREE thi lay tile nen dia hinh lân can de khong bi vuong xanh)
+        let renderTile = tileType;
+        if (tileType === 14) {
+          if (tiles) {
+            const neighbors = [
+              getTileSafe(tiles, tx, ty - 1),
+              getTileSafe(tiles, tx, ty + 1),
+              getTileSafe(tiles, tx - 1, ty),
+              getTileSafe(tiles, tx + 1, ty)
+            ];
+            for (let ni = 0; ni < neighbors.length; ni++) {
+              const nt = neighbors[ni];
+              if (nt !== 0 && nt !== 1 && nt !== 14 && nt !== 15) {
+                renderTile = nt;
+                break;
+              }
+            }
+          }
+          if (renderTile === 14) renderTile = 3;
+        }
+
+        if (renderTile === 3) { // GRASS
           // Nen co min mang hoan toan khong co duong luoi ca-ro tho
           ctx.fillStyle = '#4f8f3c';
           ctx.fillRect(px, py, TILE_PX, TILE_PX);
@@ -150,14 +170,14 @@
         } else {
           // Cac tile khac (Nuoc, Cat, Da, Go, Tuong): dung sprite co bien the
           const v = Math.floor(r * 3);
-          const spriteId = 'tile_' + (TILE_NAMES[tileType] || tileType);
-          const spr = (OP.SPR && OP.SPR.get) ? (OP.SPR.get(spriteId) || OP.SPR.get('tile_' + tileType)) : null;
+          const spriteId = 'tile_' + (TILE_NAMES[renderTile] || renderTile);
+          const spr = (OP.SPR && OP.SPR.get) ? (OP.SPR.get(spriteId) || OP.SPR.get('tile_' + renderTile)) : null;
 
           if (spr && spr.frames && spr.frames.length > 0) {
             const frame = spr.frames[v % spr.frames.length] || spr.frames[0];
             ctx.drawImage(frame, px, py, TILE_PX, TILE_PX);
           } else {
-            ctx.fillStyle = TILE_COLORS[tileType] || '#163e77';
+            ctx.fillStyle = TILE_COLORS[renderTile] || '#163e77';
             ctx.fillRect(px, py, TILE_PX, TILE_PX);
           }
         }

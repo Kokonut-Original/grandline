@@ -589,3 +589,4 @@ Mỗi 10 giây ghi một dòng `perf`: thời gian tick trung bình và lớn nh
 |---|---|---|
 | — | — | Bản đầu |
 | 2026-10-26 | M03B-T01 | Đổi chuẩn palette/viền, không đổi tên hay schema |
+| 2026-10-26 | M03B-T01c | Đổi giá trị radius/center trong S.ISLANDS và tham số mapgen, không đổi schema |
