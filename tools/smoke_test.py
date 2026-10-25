@@ -25,24 +25,34 @@ async def fake_client(client_id):
         }
         await ws.send(json.dumps(join_msg))
 
-        # 2. Cho nhan welcome
-        welcome_raw = await asyncio.wait_for(ws.recv(), timeout=5.0)
-        welcome = json.loads(welcome_raw)
-        if welcome.get('t') != 'welcome':
-            raise Exception(f"Client {client_id} ky vong 'welcome', nhan duoc: {welcome}")
+        # 2. Cho nhan welcome (va co the ca lobby broadcast)
+        received_welcome = False
+        received_lobby = False
+        received_pong = False
+
+        while not received_welcome or not received_lobby:
+            raw = await asyncio.wait_for(ws.recv(), timeout=5.0)
+            msg = json.loads(raw)
+            if msg.get('t') == 'welcome':
+                received_welcome = True
+            elif msg.get('t') == 'lobby':
+                received_lobby = True
 
         # 3. Gui ping va cho pong
         client_time = int(time.time() * 1000)
         ping_msg = {"t": "ping", "c": client_time}
         await ws.send(json.dumps(ping_msg))
 
-        pong_raw = await asyncio.wait_for(ws.recv(), timeout=5.0)
-        pong = json.loads(pong_raw)
-        if pong.get('t') != 'pong' or pong.get('c') != client_time:
-            raise Exception(f"Client {client_id} nhan pong khong hop le: {pong}")
+        while not received_pong:
+            raw = await asyncio.wait_for(ws.recv(), timeout=5.0)
+            msg = json.loads(raw)
+            if msg.get('t') == 'pong' and msg.get('c') == client_time:
+                received_pong = True
+            elif msg.get('t') == 'lobby':
+                pass # Nhan broadcast lobby tu client khac
 
-        # Giu ket noi them 1 giay
-        await asyncio.sleep(1.0)
+        # Giu ket noi them 0.5 giay
+        await asyncio.sleep(0.5)
         return True
 
 async def run_smoke():

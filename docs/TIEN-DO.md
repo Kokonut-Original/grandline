@@ -1,6 +1,6 @@
 # TIẾN ĐỘ & KẾ HOẠCH
 
-## TASK HIỆN TẠI: M01-T01
+## TASK HIỆN TẠI: M01-T02
 
 ## Quyết định đã chốt
 
@@ -41,7 +41,7 @@
 
 ### M01 – Server host & mạng
 
-- [ ] **T01 Lobby**
+- [x] **T01 Lobby**
   - Mục tiêu: join, đặt tên/màu, danh sách lobby, chọn host, host chỉnh bot, Start, chat, đọc cờ khởi động, in IP (đánh dấu 26.x).
   - Xong khi: 2 tab trình duyệt thấy nhau trong lobby.
 - [ ] **T02 Vòng lặp server**
@@ -166,3 +166,4 @@ Mỗi task trái phải có: data đầy đủ, server logic, hiệu ứng clien
 | M00-T02 | reports/M00-T02.md | 2026-10-26 |
 | M00-T03 | reports/M00-T03.md | 2026-10-26 |
 | M00-TONG-KET | reports/M00-TONG-KET.md | 2026-10-26 |
+| M01-T01 | reports/M01-T01.md | 2026-10-26 |

@@ -20,6 +20,10 @@
     boot: function () {
       OP.GAME.updateLayout();
 
+      if (OP.UI.initLobby) OP.UI.initLobby();
+      if (OP.UI.initChat) OP.UI.initChat();
+      if (OP.NET && OP.NET.connect) OP.NET.connect();
+
       if (document.fonts && document.fonts.ready) {
         document.fonts.ready.then(function () {
           OP.GAME.renderReady();
