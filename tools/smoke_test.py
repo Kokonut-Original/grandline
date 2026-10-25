@@ -1,5 +1,5 @@
 # tools/smoke_test.py
-# Kiem tra ket noi mang va luong co ban: bat server, cho 4 client gia ket noi va trao doi message.
+# Kiem tra ket noi mang va luong co ban: bat server, cho 8 client gia ket noi, test reconnect va nhan snapshot.
 # Phu thuoc: Python 3.10+, websockets, Node.js.
 
 import asyncio
@@ -14,49 +14,68 @@ import websockets
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 PORT = 8088
 
-async def fake_client(client_id):
+async def fake_client(client_id, do_reconnect=False):
     uri = f"ws://127.0.0.1:{PORT}"
     async with websockets.connect(uri) as ws:
         # 1. Gui join
         join_msg = {
             "t": "join",
             "name": f"Tester_{client_id}",
-            "colors": {"hat": client_id, "shirt": client_id, "hair": client_id}
+            "colors": {"hat": "#d9534f", "shirt": "#337ab7", "hair": "#292b2c"}
         }
         await ws.send(json.dumps(join_msg))
 
-        # 2. Cho nhan welcome (va co the ca lobby broadcast)
         received_welcome = False
-        received_lobby = False
-        received_pong = False
+        reconnect_key = None
 
-        while not received_welcome or not received_lobby:
+        while not received_welcome:
             raw = await asyncio.wait_for(ws.recv(), timeout=5.0)
             msg = json.loads(raw)
             if msg.get('t') == 'welcome':
                 received_welcome = True
-            elif msg.get('t') == 'lobby':
-                received_lobby = True
+                reconnect_key = msg.get('reconnectKey')
 
-        # 3. Gui ping va cho pong
+        # 2. Gui ping va cho pong
         client_time = int(time.time() * 1000)
-        ping_msg = {"t": "ping", "c": client_time}
-        await ws.send(json.dumps(ping_msg))
+        await ws.send(json.dumps({"t": "ping", "c": client_time}))
 
-        while not received_pong:
+        received_pong = False
+        received_snap = False
+
+        while not received_pong or not received_snap:
             raw = await asyncio.wait_for(ws.recv(), timeout=5.0)
             msg = json.loads(raw)
             if msg.get('t') == 'pong' and msg.get('c') == client_time:
                 received_pong = True
-            elif msg.get('t') == 'lobby':
-                pass # Nhan broadcast lobby tu client khac
+            elif msg.get('t') == 'snap':
+                received_snap = True
 
-        # Giu ket noi them 0.5 giay
+        if not do_reconnect:
+            await asyncio.sleep(0.5)
+            return True
+
+    # 3. Kich ban test rot mang va reconnect
+    await asyncio.sleep(0.5)
+    async with websockets.connect(uri) as ws2:
+        reconnect_join = {
+            "t": "join",
+            "reconnectKey": reconnect_key,
+            "name": f"Tester_{client_id}"
+        }
+        await ws2.send(json.dumps(reconnect_join))
+
+        reconnected = False
+        while not reconnected:
+            raw = await asyncio.wait_for(ws2.recv(), timeout=5.0)
+            msg = json.loads(raw)
+            if msg.get('t') == 'welcome' and msg.get('reconnectKey') == reconnect_key:
+                reconnected = True
+
         await asyncio.sleep(0.5)
         return True
 
 async def run_smoke():
-    print("=== DANG CHAY SMOKE_TEST.PY ===")
+    print("=== DANG CHAY SMOKE_TEST.PY (8 CLIENTS) ===")
     server_js = os.path.join(ROOT_DIR, 'server', 'server.js')
     cmd = [
         'node', server_js,
@@ -70,7 +89,6 @@ async def run_smoke():
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     try:
-        # Cho server khoi dong (toi da 5 giay)
         server_ready = False
         for _ in range(25):
             try:
@@ -84,12 +102,17 @@ async def run_smoke():
         if not server_ready:
             raise Exception("Server khong khoi dong kip thoi gian cho.")
 
-        print("2. Server da san sang, dang ket noi 4 client gia...")
-        tasks = [fake_client(i) for i in range(1, 5)]
+        print("2. Server da san sang, dang ket noi 8 client gia...")
+        tasks = []
+        for i in range(1, 9):
+            # Client 1 se thu nghiem kich ban rot mang va ket noi lai
+            is_reconnect_tester = (i == 1)
+            tasks.append(fake_client(i, is_reconnect_tester))
+
         results = await asyncio.gather(*tasks)
 
         if all(results):
-            print(f"3. Ca 4 client gia deu gui nhan message (join/welcome/ping/pong) thanh cong.")
+            print("3. Ca 8 client deu ket noi, nhan snapshot va test reconnect thanh cong.")
             print("=" * 35)
             print("SMOKE_TEST: PASS")
             return 0

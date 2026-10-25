@@ -1,6 +1,6 @@
 # TIẾN ĐỘ & KẾ HOẠCH
 
-## TASK HIỆN TẠI: M01-T04
+## TASK HIỆN TẠI: M01-T05
 
 ## Quyết định đã chốt
 
@@ -49,7 +49,7 @@
 - [x] **T03 Mượt phía client**
   - Mục tiêu: dự đoán + reconciliation + nội suy, bảng debug F3 (fps, ping, tick, số entity).
   - Xong khi: 2 tab di chuyển mượt, không kéo ngược.
-- [ ] **T04 AOI & rớt mạng**
+- [x] **T04 AOI & rớt mạng**
   - Mục tiêu: AOI, vào lại bằng reconnectKey trong 30 giây, log perf.
   - Xong khi: smoke test 8 client PASS.
 - [ ] **T05 Double Check lớn**
@@ -169,3 +169,4 @@ Mỗi task trái phải có: data đầy đủ, server logic, hiệu ứng clien
 | M01-T01 | reports/M01-T01.md | 2026-10-26 |
 | M01-T02 | reports/M01-T02.md | 2026-10-26 |
 | M01-T03 | reports/M01-T03.md | 2026-10-26 |
+| M01-T04 | reports/M01-T04.md | 2026-10-26 |
