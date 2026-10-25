@@ -1,6 +1,6 @@
 # TIẾN ĐỘ & KẾ HOẠCH
 
-## TASK HIỆN TẠI: M02-T02
+## TASK HIỆN TẠI: M02-T03
 
 ## Quyết định đã chốt
 
@@ -59,7 +59,7 @@
 
 - [x] **T01 Lõi pixel**
   - Mục tiêu: pixelGrid tự sinh viền đen, cache, OP.SPR, camera, phóng to theo số nguyên.
-- [ ] **T02 Sprite người chơi**
+- [x] **T02 Sprite người chơi**
   - Mục tiêu: chibi 16×24, 3 hướng, walk/bounce, đổi màu nón/áo/tóc.
 - [ ] **T03 Sprite thế giới & đồ**
   - Mục tiêu: sprite tile, cây, nhà, rương, bến, thuyền, chiến hạm, icon vũ khí/trái/đồ, và sprite-viewer.html.
@@ -173,3 +173,4 @@ Mỗi task trái phải có: data đầy đủ, server logic, hiệu ứng clien
 | M01-T05 | reports/M01-T05.md | 2026-10-26 |
 | M01-TONG-KET | reports/M01-TONG-KET.md | 2026-10-26 |
 | M02-T01 | reports/M02-T01.md | 2026-10-26 |
+| M02-T02 | reports/M02-T02.md | 2026-10-26 |
