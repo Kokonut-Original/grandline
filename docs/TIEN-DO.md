@@ -1,6 +1,6 @@
 # TIẾN ĐỘ & KẾ HOẠCH
 
-## TASK HIỆN TẠI: M03-T01
+## TASK HIỆN TẠI: M03-T02
 
 ## Quyết định đã chốt
 
@@ -67,7 +67,7 @@
 
 ### M03 – Bản đồ
 
-- [ ] **T01 mapgen**
+- [x] **T01 mapgen**
   - Mục tiêu: 10 đảo, bờ biển gợn, nông/sâu, biome, bến thuyền.
   - Xong khi: hash map giống nhau giữa node và trình duyệt với cùng seed (có test).
 - [ ] **T02 Render map**
@@ -176,3 +176,4 @@ Mỗi task trái phải có: data đầy đủ, server logic, hiệu ứng clien
 | M02-T02 | reports/M02-T02.md | 2026-10-26 |
 | M02-T03 | reports/M02-T03.md | 2026-10-26 |
 | M02-TONG-KET | reports/M02-TONG-KET.md | 2026-10-26 |
+| M03-T01 | reports/M03-T01.md | 2026-10-26 |

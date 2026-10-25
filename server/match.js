@@ -12,12 +12,14 @@ require('../shared/03-protocol.js');
 const S = globalThis.OP_SHARED;
 const { packSnapshot } = require('./snapshot.js');
 const logger = require('./log.js');
+const World = require('./world.js');
 
 class MatchManager {
   constructor(flags = {}) {
     this.flags = flags;
     this.phase = S.PHASE.LOBBY;
     this.seed = flags.seed !== null && flags.seed !== undefined ? flags.seed : 1;
+    this.world = new World(this.seed);
     this.players = new Map(); // id -> player object
     this.hostId = null;
 
