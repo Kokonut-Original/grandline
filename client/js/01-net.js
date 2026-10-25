@@ -1,5 +1,5 @@
 // client/js/01-net.js
-// Quan ly ket noi mang WebSocket giua client va server, gui va phan phoi message.
+// Quan ly ket noi mang WebSocket giua client va server, do ping va phan phoi message.
 // Phu thuoc: client/js/00-boot.js.
 
 (function () {
@@ -13,6 +13,8 @@
   let youId = null;
   let isHost = false;
   let reconnectKey = null;
+  let pingMs = 0;
+  let pingInterval = null;
 
   OP.NET = {
     connect: function () {
@@ -28,7 +30,16 @@
 
       ws.onopen = function () {
         isConnected = true;
-        // Kiem tra reconnectKey neu co
+
+        // Bat dinh thoi do ping 1s/lan
+        if (!pingInterval) {
+          pingInterval = setInterval(function () {
+            if (isConnected) {
+              OP.NET.send({ t: 'ping', c: Date.now() });
+            }
+          }, 1000);
+        }
+
         const savedKey = sessionStorage.getItem('op_reconnectKey');
         const joinMsg = {
           t: 'join',
@@ -63,16 +74,18 @@
             sessionStorage.setItem('op_reconnectKey', reconnectKey);
           }
         } else if (msg.t === 'lobby') {
-          // Cap nhat xem minh co phai la host khong tu danh sach
           if (Array.isArray(msg.players)) {
             const me = msg.players.find(p => p.id === youId);
             if (me) {
               isHost = !!me.isHost;
             }
           }
+        } else if (msg.t === 'pong') {
+          if (typeof msg.c === 'number') {
+            pingMs = Math.max(0, Date.now() - msg.c);
+          }
         }
 
-        // Goi cac callback da dang ky theo type
         const cbs = handlers.get(msg.t);
         if (cbs) {
           for (let i = 0; i < cbs.length; i++) {
@@ -80,7 +93,6 @@
           }
         }
 
-        // Goi callback toan cuc
         const globalCbs = handlers.get('*');
         if (globalCbs) {
           for (let i = 0; i < globalCbs.length; i++) {
@@ -91,6 +103,10 @@
 
       ws.onclose = function () {
         isConnected = false;
+        if (pingInterval) {
+          clearInterval(pingInterval);
+          pingInterval = null;
+        }
       };
 
       ws.onerror = function () {
@@ -121,6 +137,10 @@
 
     isConnected: function () {
       return isConnected;
+    },
+
+    getPing: function () {
+      return pingMs;
     }
   };
 })();

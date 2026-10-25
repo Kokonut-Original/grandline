@@ -68,6 +68,19 @@
 
         const inputState = OP.IN.getState();
         seq++;
+        const dt = intervalMs / 1000;
+
+        // Du doan vi tri ngay tren may client
+        if (OP.PRED && OP.PRED.addInput) {
+          OP.PRED.addInput({
+            seq: seq,
+            mx: inputState.mx,
+            my: inputState.my,
+            aim: inputState.aim,
+            btn: inputState.btn,
+            dt: dt
+          });
+        }
 
         OP.NET.send({
           t: 'in',

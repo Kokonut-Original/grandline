@@ -1,6 +1,6 @@
 # TIẾN ĐỘ & KẾ HOẠCH
 
-## TASK HIỆN TẠI: M01-T03
+## TASK HIỆN TẠI: M01-T04
 
 ## Quyết định đã chốt
 
@@ -46,7 +46,7 @@
   - Xong khi: 2 tab trình duyệt thấy nhau trong lobby.
 - [x] **T02 Vòng lặp server**
   - Mục tiêu: tick 30Hz, input bitmask, di chuyển trên nền phẳng tạm, snapshot 20Hz, ping.
-- [ ] **T03 Mượt phía client**
+- [x] **T03 Mượt phía client**
   - Mục tiêu: dự đoán + reconciliation + nội suy, bảng debug F3 (fps, ping, tick, số entity).
   - Xong khi: 2 tab di chuyển mượt, không kéo ngược.
 - [ ] **T04 AOI & rớt mạng**
@@ -168,3 +168,4 @@ Mỗi task trái phải có: data đầy đủ, server logic, hiệu ứng clien
 | M00-TONG-KET | reports/M00-TONG-KET.md | 2026-10-26 |
 | M01-T01 | reports/M01-T01.md | 2026-10-26 |
 | M01-T02 | reports/M01-T02.md | 2026-10-26 |
+| M01-T03 | reports/M01-T03.md | 2026-10-26 |

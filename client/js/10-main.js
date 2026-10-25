@@ -42,16 +42,10 @@
       if (OP.NET && OP.NET.on) {
         OP.NET.on('snap', function (snap) {
           OP.GAME.state.lastTick = snap.tick;
-          OP.GAME.state.me = snap.me;
-
-          // Cap nhat map cac entity khac
-          const currentMap = OP.GAME.state.ents;
-          currentMap.clear();
-          if (Array.isArray(snap.ents)) {
-            for (let i = 0; i < snap.ents.length; i++) {
-              const e = snap.ents[i];
-              currentMap.set(e.i, e);
-            }
+          if (OP.PRED && OP.PRED.onSnapshot) {
+            OP.PRED.onSnapshot(snap);
+          } else {
+            OP.GAME.state.me = snap.me;
           }
         });
 
@@ -85,9 +79,22 @@
     render: function () {
       if (!worldCtx) return;
 
+      // Cap nhat noi suy thuc the
+      if (OP.PRED && OP.PRED.update) {
+        OP.PRED.update();
+      }
+
       // Render the gioi & thuc the
       if (OP.R && OP.R.renderEntities) {
         OP.R.renderEntities(worldCtx);
+      }
+
+      // Render HUD va bang debug F3
+      if (uiCtx) {
+        uiCtx.clearRect(0, 0, 480, 270);
+        if (OP.HUD && OP.HUD.render) {
+          OP.HUD.render(uiCtx);
+        }
       }
     },
 
