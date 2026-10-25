@@ -108,6 +108,13 @@ const valB = rngB.next();
 assert(valA === valB, 'RNG khong cho ra ket qua dong nhat voi cung mot seed');
 assert(valA >= 0 && valA < 1, 'RNG.next() khong nam trong khoang [0, 1)');
 
+// 8. Kiem tra Danh muc Trai ac quy, Vu khi, Vat pham, Thuyen
+console.log('8. Kiem tra S.FRUITS, S.WEAPONS, S.ITEMS, S.BOATS...');
+assert(S.FRUITS && Object.keys(S.FRUITS).length === 29, `S.FRUITS phai co du 29 trai, hien tai: ${Object.keys(S.FRUITS || {}).length}`);
+assert(S.WEAPONS && Object.keys(S.WEAPONS).length === 13, `S.WEAPONS phai co du 13 vu khi, hien tai: ${Object.keys(S.WEAPONS || {}).length}`);
+assert(S.ITEMS && Object.keys(S.ITEMS).length === 14, `S.ITEMS phai co du 14 vat pham, hien tai: ${Object.keys(S.ITEMS || {}).length}`);
+assert(S.BOATS && Object.keys(S.BOATS).length === 4, `S.BOATS phai co du 4 loai thuyen, hien tai: ${Object.keys(S.BOATS || {}).length}`);
+
 console.log('='.repeat(35));
 if (errors.length > 0) {
   console.log(`CHECK_DATA: FAIL (${errors.length} loi):`);
