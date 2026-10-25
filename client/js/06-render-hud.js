@@ -88,7 +88,12 @@
       drawBigMap(ctx, me, map);
     }
 
-    // 3. Ve bang debug F3 neu duoc bat hoac co ?debug=1
+    // 3. Ve thanh the luc (Duration Bar) o goc duoi
+    if (me) {
+      drawStaminaHud(ctx, me);
+    }
+
+    // 4. Ve bang debug F3 neu duoc bat hoac co ?debug=1
     if (showDebug) {
       drawDebugOverlay(ctx, me, state);
     }
@@ -263,6 +268,50 @@
       y += 12;
     }
 
+
+    ctx.restore();
+  }
+
+  function drawStaminaHud(ctx, me) {
+    const stamina = (me.stamina !== undefined) ? me.stamina : 100;
+    const isSprint = !!me.isSprinting;
+    const pct = Math.max(0, Math.min(1, stamina / 100));
+
+    const w = 120;
+    const h = 13;
+    const x = 8;
+    const y = 270 - h - 8;
+
+    ctx.save();
+
+    // Khung vien ngoai
+    ctx.fillStyle = '#160e22';
+    ctx.fillRect(x - 1, y - 1, w + 2, h + 2);
+
+    // Nen ben trong
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+    ctx.fillRect(x, y, w, h);
+
+    // Thanh fill the luc
+    if (pct > 0) {
+      const fillW = Math.round((w - 2) * pct);
+      ctx.fillStyle = isSprint ? '#fbbf24' : (stamina <= 15 ? '#ef4444' : '#0284c7');
+      ctx.fillRect(x + 1, y + 1, fillW, h - 2);
+
+      // Vet sang nhe tren dau thanh
+      if (isSprint) {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+        ctx.fillRect(x + 1, y + 1, fillW, 2);
+      }
+    }
+
+    // Chu hien thi 2 luot strokeText + fillText
+    let label = `THỂ LỰC [SHIFT]: ${Math.round(stamina)}%`;
+    if (stamina <= 5) label = 'KIỆT SỨC!';
+    else if (isSprint) label = `CHẠY NHANH: ${Math.round(stamina)}%`;
+
+    const txtColor = (stamina <= 5) ? '#ef4444' : (isSprint ? '#fef08a' : '#ffffff');
+    drawOutlinedText(ctx, label, x + w / 2, y + h / 2, 10, txtColor, '#160e22', 'center');
 
     ctx.restore();
   }

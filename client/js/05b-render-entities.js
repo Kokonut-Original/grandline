@@ -193,6 +193,17 @@
     ctx.fillRect(x - 11, y - 24, 22, 4);
     ctx.fillStyle = pct > 0.5 ? '#22c55e' : (pct > 0.2 ? '#eab308' : '#ef4444');
     ctx.fillRect(x - 10, y - 23, 20 * pct, 2);
+
+    // 6. Thanh the luc / Duration Bar tren dau nhan vat
+    const stamina = p.stamina !== undefined ? p.stamina : 100;
+    const isSprint = !!p.isSprinting;
+    if (isMe || isSprint || stamina < 95) {
+      const stPct = Math.max(0, Math.min(1, stamina / 100));
+      ctx.fillStyle = '#160e22';
+      ctx.fillRect(x - 11, y - 19, 22, 3);
+      ctx.fillStyle = isSprint ? '#fbbf24' : (stamina <= 10 ? '#ef4444' : '#38bdf8');
+      ctx.fillRect(x - 10, y - 18.5, 20 * stPct, 1.5);
+    }
   }
 
   OP.R.drawShadow = drawShadow;

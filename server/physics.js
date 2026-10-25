@@ -57,6 +57,13 @@ function tickPlayer(player, world, dt) {
     speedMult = Math.min(speedMult, 0.5);
   }
 
+  // Chay nhanh khi giu Shift va con the luc (tang 45% toc do)
+  const isSprinting = !!(input.sprint || ((input.btn || 0) & 32768)) && (input.mx !== 0 || input.my !== 0) && (player.stamina > 0) && (waterState !== S.WATER.DEEP);
+  player.isSprinting = isSprinting;
+  if (isSprinting) {
+    speedMult *= 1.45;
+  }
+
   const baseSpeed = (CONST.MOVE_SPEED || 90) * speedMult;
 
   // 3. Chuan hoa vector input
@@ -122,6 +129,11 @@ function tickPlayer(player, world, dt) {
         player.hp = Math.max(0, player.hp - 5 * dt);
       }
     }
+  } else if (isSprinting) {
+    // Dang giu Shift chay nhanh: tieu hao 25 the luc/giay (chay lien tuc duoc 4 giay)
+    player.drowning = false;
+    const sprintCost = (CONST.SPRINT_STAMINA_COST || 25) * dt;
+    player.stamina = Math.max(0, player.stamina - sprintCost);
   } else if (waterState === S.WATER.LAND) {
     // Tren can: tu hoi 15 the luc/giay
     player.drowning = false;

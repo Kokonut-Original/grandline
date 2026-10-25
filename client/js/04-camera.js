@@ -14,13 +14,16 @@
     VIEW_H: 270
   };
 
+  const VISION_SCALE = 1.5;
+
   const CAM = {
     x: (CONST.MAP_TILES * CONST.TILE) / 2,
     y: (CONST.MAP_TILES * CONST.TILE) / 2,
     targetX: (CONST.MAP_TILES * CONST.TILE) / 2,
     targetY: (CONST.MAP_TILES * CONST.TILE) / 2,
-    w: CONST.VIEW_W || 480,
-    h: CONST.VIEW_H || 270,
+    visionScale: VISION_SCALE,
+    w: Math.round((CONST.VIEW_W || 480) * VISION_SCALE),
+    h: Math.round((CONST.VIEW_H || 270) * VISION_SCALE),
 
     follow: function (tx, ty, smooth) {
       if (typeof tx === 'number') this.targetX = tx;
@@ -52,23 +55,24 @@
     },
 
     worldToScreen: function (wx, wy) {
-      const sx = Math.round(wx - this.x + this.w / 2);
-      const sy = Math.round(wy - this.y + this.h / 2);
+      const sx = (wx - this.x) / this.visionScale + 240;
+      const sy = (wy - this.y) / this.visionScale + 135;
       return { x: sx, y: sy };
     },
 
     screenToWorld: function (sx, sy) {
-      const wx = sx - this.w / 2 + this.x;
-      const wy = sy - this.h / 2 + this.y;
+      const wx = (sx - 240) * this.visionScale + this.x;
+      const wy = (sy - 135) * this.visionScale + this.y;
       return { x: wx, y: wy };
     },
 
     apply: function (ctx) {
       if (!ctx) return;
       ctx.save();
-      const ox = Math.round(this.w / 2 - this.x);
-      const oy = Math.round(this.h / 2 - this.y);
-      ctx.translate(ox, oy);
+      // Dua tam ve chinh giua viewport logic 480x270 va phong to tam nhin 1.5x
+      ctx.translate(240, 135);
+      ctx.scale(1 / this.visionScale, 1 / this.visionScale);
+      ctx.translate(-Math.round(this.x), -Math.round(this.y));
     },
 
     restore: function (ctx) {

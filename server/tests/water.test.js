@@ -130,6 +130,23 @@ function run() {
   assert.strictEqual(wallTester.x, startX, 'Khong duoc di xuyen qua tuong chan WALL');
   assert.strictEqual(wallTester.vx, 0, 'Van toc phai bi triet tieu khi va vao tuong');
 
+  // 8. Test giu Shift chay nhanh (Sprint) va tieu hao the luc
+  const landWorld = new MockWorld(S.TILE.GRASS);
+  const sprinter = {
+    x: 100, y: 100, vx: 0, vy: 0, hp: 100, hpMax: 100, stamina: 100, fruit: null,
+    currentInput: { mx: 1, my: 0, aim: 0, sprint: true }
+  };
+  physics.tickPlayer(sprinter, landWorld, 1 / 30);
+  assert.strictEqual(Math.round(sprinter.vx), 131, 'Toc do chay nhanh phai bang MOVE_SPEED * 1.45 (130.5 -> 131 px/s)');
+  assert.ok(sprinter.stamina < 100, 'Chay nhanh phai tieu hao the luc');
+  assert.strictEqual(sprinter.isSprinting, true, 'isSprinting phai la true');
+
+  // Khi the luc = 0 thi khong chay nhanh duoc nua
+  sprinter.stamina = 0;
+  physics.tickPlayer(sprinter, landWorld, 1 / 30);
+  assert.strictEqual(Math.round(sprinter.vx), 90, 'Het the luc phai quay ve toc do thuong 90 px/s');
+  assert.strictEqual(sprinter.isSprinting, false, 'Het the luc isSprinting phai la false');
+
   console.log('PASS');
 }
 

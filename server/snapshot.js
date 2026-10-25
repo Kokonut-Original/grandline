@@ -27,7 +27,8 @@ function packPlayerMe(p) {
     aim: Math.round(p.aim * 100) / 100,
     hp: p.hp,
     hm: p.hpMax,
-    stamina: p.stamina,
+    stamina: p.stamina !== undefined ? Math.round(p.stamina) : 100,
+    sprint: !!p.isSprinting,
     name: p.name,
     colors: p.colors
   };

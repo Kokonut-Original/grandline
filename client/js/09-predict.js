@@ -28,8 +28,20 @@
       // inputObj: { seq, mx, my, aim, btn, dt }
       pendingInputs.push(inputObj);
 
-      // Du doan ngay lap tuc vi tri tren client
-      const moveSpeed = (S.CONST && S.CONST.MOVE_SPEED) ? S.CONST.MOVE_SPEED : 90;
+      // Du doan ngay lap tuc vi tri tren client (co tinh den sprint 1.45x)
+      let moveSpeed = (S.CONST && S.CONST.MOVE_SPEED) ? S.CONST.MOVE_SPEED : 90;
+      const meStamina = OP.GAME && OP.GAME.state && OP.GAME.state.me ? OP.GAME.state.me.stamina : 100;
+      const isSprinting = !!inputObj.sprint && (meStamina === undefined || meStamina > 0);
+      if (isSprinting) {
+        moveSpeed *= 1.45;
+        if (OP.GAME && OP.GAME.state && OP.GAME.state.me && OP.GAME.state.me.stamina !== undefined) {
+          OP.GAME.state.me.stamina = Math.max(0, OP.GAME.state.me.stamina - 25 * inputObj.dt);
+          OP.GAME.state.me.isSprinting = true;
+        }
+      } else if (OP.GAME && OP.GAME.state && OP.GAME.state.me) {
+        OP.GAME.state.me.isSprinting = false;
+      }
+
       let mx = inputObj.mx;
       let my = inputObj.my;
       const len = Math.hypot(mx, my);
@@ -66,7 +78,7 @@
       }
 
       // 2. Reconciliation: Chay lai cac input chua duoc server ack tu vi tri server xac nhan
-      const moveSpeed = (S.CONST && S.CONST.MOVE_SPEED) ? S.CONST.MOVE_SPEED : 90;
+      const baseMoveSpeed = (S.CONST && S.CONST.MOVE_SPEED) ? S.CONST.MOVE_SPEED : 90;
       predictedPos.x = serverPos.x;
       predictedPos.y = serverPos.y;
 
@@ -79,8 +91,9 @@
           mx /= len;
           my /= len;
         }
-        predictedPos.x += mx * moveSpeed * inp.dt;
-        predictedPos.y += my * moveSpeed * inp.dt;
+        const spd = inp.sprint ? (baseMoveSpeed * 1.45) : baseMoveSpeed;
+        predictedPos.x += mx * spd * inp.dt;
+        predictedPos.y += my * spd * inp.dt;
       }
 
       if (OP.GAME && OP.GAME.state) {
@@ -92,6 +105,7 @@
         OP.GAME.state.me.hp = snap.me.hp;
         OP.GAME.state.me.hm = snap.me.hm;
         OP.GAME.state.me.stamina = snap.me.stamina;
+        OP.GAME.state.me.isSprinting = snap.me.sprint;
       }
 
       // 3. Luu buffer cho cac entity khac de noi suy

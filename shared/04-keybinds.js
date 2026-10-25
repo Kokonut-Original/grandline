@@ -22,7 +22,8 @@
     INTERACT: 2048,
     DIAL: 4096,
     W1: 8192,
-    W2: 16384
+    W2: 16384,
+    SPRINT: 32768
   });
 
   S.KEYS = Object.freeze({
@@ -31,7 +32,8 @@
     Q: 'KeyQ',
     E: 'KeyE',
     R: 'KeyR',
-    ROKU1: 'ShiftLeft',
+    SPRINT: 'ShiftLeft',
+    ROKU1: 'KeyZ',
     ROKU2: 'Space',
     ROKU3: 'KeyC',
     HAKI_ARM: 'KeyH',

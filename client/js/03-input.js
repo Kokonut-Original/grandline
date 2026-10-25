@@ -78,6 +78,7 @@
             my: inputState.my,
             aim: inputState.aim,
             btn: inputState.btn,
+            sprint: inputState.sprint,
             dt: dt
           });
         }
@@ -88,7 +89,8 @@
           mx: inputState.mx,
           my: inputState.my,
           aim: inputState.aim,
-          btn: inputState.btn
+          btn: inputState.btn,
+          sprint: inputState.sprint
         });
       }, intervalMs);
     },
@@ -101,6 +103,10 @@
       if (keysDown.has('KeyS') || keysDown.has('ArrowDown')) my += 1;
       if (keysDown.has('KeyA') || keysDown.has('ArrowLeft')) mx -= 1;
       if (keysDown.has('KeyD') || keysDown.has('ArrowRight')) mx += 1;
+
+      // Giu Shift de chay nhanh
+      const isShift = keysDown.has('ShiftLeft') || keysDown.has('ShiftRight');
+      const isSprint = isShift && (mx !== 0 || my !== 0);
 
       // Tinh goc ngam tu vi tri nhan vat (tam man hinh 240, 135) toi chuot
       const centerX = 240;
@@ -115,8 +121,9 @@
       if (keysDown.has('KeyQ')) btn |= (BTN.Q || 4);
       if (keysDown.has('KeyE')) btn |= (BTN.E || 8);
       if (keysDown.has('KeyR')) btn |= (BTN.R || 16);
+      if (isSprint) btn |= (BTN.SPRINT || 32768);
 
-      return { mx, my, aim, btn };
+      return { mx, my, aim, btn, sprint: isSprint };
     }
   };
 })();
