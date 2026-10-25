@@ -38,8 +38,21 @@
       if (OP.IN && OP.IN.init) OP.IN.init();
       if (OP.NET && OP.NET.connect) OP.NET.connect();
 
-      // Lang nghe snapshot tu server
+      // Lang nghe message tu server
       if (OP.NET && OP.NET.on) {
+        OP.NET.on('welcome', function (msg) {
+          if (msg && msg.seed !== undefined) {
+            OP.GAME.state.seed = msg.seed;
+            const S = OP.S || window.OP_SHARED;
+            if (S && S.MAPGEN && S.MAPGEN.generate) {
+              OP.GAME.state.map = S.MAPGEN.generate(msg.seed);
+              if (OP.R && OP.R.initMap) {
+                OP.R.initMap(OP.GAME.state.map);
+              }
+            }
+          }
+        });
+
         OP.NET.on('snap', function (snap) {
           OP.GAME.state.lastTick = snap.tick;
           if (OP.PRED && OP.PRED.onSnapshot) {
@@ -95,6 +108,11 @@
       // Render the gioi & thuc the co su dung camera
       if (OP.CAM && OP.CAM.apply) {
         OP.CAM.apply(worldCtx);
+      }
+
+      // Render ban do dia hinh theo chunk
+      if (OP.R && OP.R.renderMap) {
+        OP.R.renderMap(worldCtx);
       }
 
       if (OP.R && OP.R.renderEntities) {
