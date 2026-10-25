@@ -29,7 +29,7 @@
     chatInputEl = document.createElement('input');
     chatInputEl.type = 'text';
     chatInputEl.maxLength = 120;
-    chatInputEl.placeholder = 'Nhan Enter de chat...';
+    chatInputEl.placeholder = 'Nhấn Enter để chat...';
     chatInputEl.className = 'chat-input';
 
     chatInputEl.onkeydown = function (e) {

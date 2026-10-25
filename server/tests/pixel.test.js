@@ -38,8 +38,8 @@ function run() {
   // O tren tam (1, 2) la phan tu thuoc dau '+' nen la mau do
   assert.strictEqual(mat.pixels[1][2], '#ff0000', 'Dinh chu thap phai la mau do');
 
-  // O ngoai cung tiep giap dinh chu thap (0, 2) phai la vien den tu sinh
-  assert.strictEqual(mat.pixels[0][2], '#111111', 'Vien den 1px ngoai cung phai tu dong duoc sinh ra');
+  // O ngoai cung tiep giap dinh chu thap (0, 2) phai la vien den tu sinh (#160e22 theo chuan ART-REF)
+  assert.strictEqual(mat.pixels[0][2], '#160e22', 'Vien den 1px ngoai cung phai tu dong duoc sinh ra voi mau #160e22');
 
   // Goc ngoai cung (0, 0) khong tiep giap 4 huong voi pixel mau nao thi phai la null
   assert.strictEqual(mat.pixels[0][0], null, 'Goc ngoai cung khong co vien phai giu nguyen null');

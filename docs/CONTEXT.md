@@ -383,8 +383,8 @@ Khi xem trận: ←/→ đổi người xem, 1–4 gửi biểu cảm.
 
 **Nguyên tắc chung**
 - Không dùng sprite sheet ngoài. Mọi thứ vẽ bằng mảng chuỗi ký tự trong `client/js/02*-sprites-*.js`.
-- Phong cách chibi đầu to mình nhỏ, 3–4 tông màu đổ bóng.
-- Viền đen 1px tự sinh bằng `pixelGrid()`: quét 4 hướng quanh mỗi pixel có màu.
+- Phong cách chibi đầu to mình nhỏ, sprite có 4 tông (tối, vừa, sáng, điểm nhấn), bóng tối nghiêng về sắc ấm/đậm hơn chứ không chỉ giảm độ sáng; viền màu cố định #160e22; tile nền KHÔNG viền; nguồn sáng giả định từ trên chếch trái.
+- Viền đen 1px tự sinh bằng pixelGrid(): quét 4 hướng quanh mỗi pixel có màu với màu viền #160e22.
 
 **Animation:** `walk` (3 khung bước), `bounce` (nhún, squash), `static` (vũ khí, icon).
 

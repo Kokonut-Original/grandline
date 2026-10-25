@@ -1,5 +1,5 @@
 // client/js/06-render-hud.js
-// Render giao dien HUD: bang debug F3, minimap goc phai va ban do toan canh 10 dao khi bam Tab.
+// Render giao dien HUD tren uiCanvas voi chu 2 luot (strokeText roi fillText), tieng Viet day du dau, minimap va F3.
 // Phu thuoc: client/js/00-boot.js, client/js/01-net.js, shared/14-data-islands.js.
 
 (function () {
@@ -16,22 +16,37 @@
   let lastFpsTime = performance.now();
 
   const MINIMAP_TILE_COLORS = {
-    0: '#1e3a8a',  // DEEP
-    1: '#0284c7',  // SHALLOW
-    2: '#eab308',  // SAND
-    3: '#15803d',  // GRASS
-    4: '#854d0e',  // DIRT
-    5: '#64748b',  // STONE
-    6: '#334155',  // WALL
-    7: '#78350f',  // WOOD
-    8: '#7dd3fc',  // ICE
-    9: '#dc2626',  // LAVA
-    10: '#f8fafc', // SNOW
-    11: '#ca8a04', // QUICKSAND
-    12: '#b45309', // DOCK
-    13: '#d97706', // BRIDGE
-    16: '#94a3b8'  // FLOOR
+    0: '#1a498b',  // DEEP
+    1: '#369ec9',  // SHALLOW
+    2: '#e2c275',  // SAND
+    3: '#4eb83a',  // GRASS
+    4: '#825127',  // DIRT
+    5: '#6b7a90',  // STONE
+    6: '#424d5d',  // WALL
+    7: '#733f1b',  // WOOD
+    8: '#96d0ea',  // ICE
+    9: '#b32b13',  // LAVA
+    10: '#d2e7f5', // SNOW
+    11: '#b38b34', // QUICKSAND
+    12: '#663516', // DOCK
+    13: '#80461c', // BRIDGE
+    14: '#298230', // TREE
+    15: '#523727', // HOUSE_WALL
+    16: '#545468'  // FLOOR
   };
+
+  // Ham ve chu 2 luot (strokeText roi fillText) theo ART-REF muc 14
+  function drawOutlinedText(ctx, text, x, y, size, fill, stroke, align, baseline) {
+    ctx.font = `${Math.round(size)}px 'VT323', monospace`;
+    ctx.textAlign = align || 'left';
+    ctx.textBaseline = baseline || 'middle';
+    ctx.lineWidth = Math.max(2, Math.round(size / 5));
+    ctx.strokeStyle = stroke || '#160e22';
+    ctx.lineJoin = 'round';
+    ctx.strokeText(text, Math.round(x), Math.round(y));
+    ctx.fillStyle = fill || '#ffffff';
+    ctx.fillText(text, Math.round(x), Math.round(y));
+  }
 
   // Lang nghe phim F3 va Tab
   window.addEventListener('keydown', function (e) {
@@ -68,7 +83,7 @@
       drawMinimap(ctx, me, map);
     }
 
-    // 2. Ve Ban do lon khi nhan Tab
+    // 2. Ve Ban do toan canh khi nhan Tab
     if (showBigMap && map) {
       drawBigMap(ctx, me, map);
     }
@@ -108,7 +123,7 @@
         if (tx >= 0 && tx < mapW && ty >= 0 && ty < mapW && tiles) {
           tType = tiles[ty * mapW + tx];
         }
-        ctx.fillStyle = MINIMAP_TILE_COLORS[tType] || '#1e3a8a';
+        ctx.fillStyle = MINIMAP_TILE_COLORS[tType] || '#1a498b';
         ctx.fillRect(x + (dx + half) * 2, y + (dy + half) * 2, 2, 2);
       }
     }
@@ -147,8 +162,8 @@
   }
 
   function drawBigMap(ctx, me, map) {
-    const w = 240;
-    const h = 240;
+    const w = 260;
+    const h = 250;
     const x = Math.round((480 - w) / 2);
     const y = Math.round((270 - h) / 2);
 
@@ -160,11 +175,8 @@
     ctx.lineWidth = 2;
     ctx.strokeRect(x, y, w, h);
 
-    // Tieu de
-    ctx.font = '14px VT323, monospace';
-    ctx.fillStyle = '#facc15';
-    ctx.textAlign = 'center';
-    ctx.fillText('HAI DO DAI HAI TRINH (TAB: DONG)', x + w / 2, y + 16);
+    // Tieu de tieng Viet 2 luot stroke + fill
+    drawOutlinedText(ctx, 'HẢI ĐỒ ĐẠI HẢI TRÌNH (TAB: ĐÓNG)', x + w / 2, y + 14, 15, '#facc15', '#160e22', 'center');
 
     const mapAreaSize = 192;
     const mapAreaX = x + (w - mapAreaSize) / 2;
@@ -177,7 +189,6 @@
 
     // Ve 10 dao
     const islands = (S.ISLANDS) || (map.islands) || {};
-    ctx.font = '10px VT323, monospace';
 
     for (const key in islands) {
       const isl = islands[key];
@@ -186,20 +197,19 @@
       const ir = Math.max(3, isl.radius * scale);
 
       // Dai nuoc nong
-      ctx.fillStyle = '#0284c7';
+      ctx.fillStyle = '#369ec9';
       ctx.beginPath();
       ctx.arc(ix, iy, ir + 2, 0, Math.PI * 2);
       ctx.fill();
 
       // Dat lien
-      ctx.fillStyle = (isl.id === 'desert') ? '#ca8a04' : (isl.id === 'winter' ? '#bae6fd' : (isl.id === 'fortress' ? '#64748b' : '#15803d'));
+      ctx.fillStyle = (isl.id === 'desert') ? '#e2c275' : (isl.id === 'winter' ? '#d2e7f5' : (isl.id === 'fortress' ? '#6b7a90' : '#4eb83a'));
       ctx.beginPath();
       ctx.arc(ix, iy, ir, 0, Math.PI * 2);
       ctx.fill();
 
-      // Ten dao
-      ctx.fillStyle = '#e2e8f0';
-      ctx.fillText(isl.name.split(' ')[0], ix, iy + ir + 9);
+      // Ten dao tieng Viet co dau
+      drawOutlinedText(ctx, isl.name, ix, iy + ir + 7, 10, '#ffffff', '#160e22', 'center');
     }
 
     // Ve cham vi tri ban than (xanh la nhap nhay)
@@ -231,33 +241,34 @@
     let y = 14;
 
     ctx.save();
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
-    ctx.fillRect(4, 4, 130, 68);
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+    ctx.fillRect(4, 4, 220, 84);
 
-    ctx.font = '12px VT323, monospace';
-    ctx.textAlign = 'left';
-
-    ctx.fillStyle = fps >= 55 ? '#5ac54f' : (fps >= 30 ? '#f4c430' : '#da3633');
-    ctx.fillText(`FPS:  ${fps}`, x, y);
+    const fpsColor = fps >= 55 ? '#5ac54f' : (fps >= 30 ? '#f4c430' : '#da3633');
+    drawOutlinedText(ctx, `FPS:  ${fps}`, x, y, 12, fpsColor, '#160e22');
     y += 12;
 
-    ctx.fillStyle = ping <= 50 ? '#5ac54f' : (ping <= 100 ? '#f4c430' : '#da3633');
-    ctx.fillText(`PING: ${ping} ms`, x, y);
+    const pingColor = ping <= 50 ? '#5ac54f' : (ping <= 100 ? '#f4c430' : '#da3633');
+    drawOutlinedText(ctx, `PING: ${ping} ms`, x, y, 12, pingColor, '#160e22');
     y += 12;
 
-    ctx.fillStyle = '#3e8edf';
-    ctx.fillText(`TICK: ${tick}`, x, y);
+    drawOutlinedText(ctx, `TICK: ${tick}`, x, y, 12, '#3e8edf', '#160e22');
     y += 12;
 
-    ctx.fillStyle = '#e6edf3';
-    ctx.fillText(`ENTS: ${entCount}`, x, y);
+    drawOutlinedText(ctx, `ENTS: ${entCount}`, x, y, 12, '#e6edf3', '#160e22');
     y += 12;
 
     if (me) {
-      ctx.fillStyle = '#cfcfcf';
-      ctx.fillText(`POS:  ${Math.round(me.x)}, ${Math.round(me.y)}`, x, y);
+      drawOutlinedText(ctx, `POS:  ${Math.round(me.x)}, ${Math.round(me.y)}`, x, y, 12, '#cfcfcf', '#160e22');
+      y += 12;
     }
+
+    // Chuoi kiem chung font tieng Viet day du dau theo yeu cau task
+    drawOutlinedText(ctx, 'Hải Tặc Mũ Rơm ắằẳẵặ ếềểễệ ơờởỡợ ưừửữự', x, y, 11, '#ffd23d', '#160e22');
 
     ctx.restore();
   }
+
+  OP.HUD.drawOutlinedText = drawOutlinedText;
+
 })();

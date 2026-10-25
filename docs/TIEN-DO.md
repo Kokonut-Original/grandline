@@ -1,6 +1,6 @@
 # TIẾN ĐỘ & KẾ HOẠCH
 
-## TASK HIỆN TẠI: M04-T01
+## TASK HIỆN TẠI: M03B-T01
 
 ## Quyết định đã chốt
 
@@ -77,6 +77,18 @@
   - Xong khi: test water.test.js PASS.
 - [x] **T04 Đồ vật trên đảo**
   - Mục tiêu: nhà, cây, điểm loot/rương/boss/bến theo từng đảo.
+
+### M03B – Nâng cấp đồ họa (Mini Dungeon Slayer Reference)
+
+- [ ] **T01 Nền tảng màu, tile, bóng, font**
+  - Mục tiêu: Palette 4 tông chuẩn ART-REF, độ sáng DEEP < SHALLOW < GRASS < SAND, tile 17 loại có 3 biến thể hash2, viền #160e22, bóng elip rgba(0,0,0,.35), font tiếng Việt có dấu 2 lượt stroke+fill.
+  - Xong khi: run_all PASS, kiểm tra độ sáng & biến thể tile PASS, bóng elip hiện trên cỏ, text có dấu không lỗi.
+- [ ] **T02 Nhà top-down**
+  - Mục tiêu: Nhà 2D top-down surviv.io, mái che + skylight, thềm gạch, thùng crate, barrel, hiệu ứng biến mất mái khi vào trong.
+  - Xong khi: đứng ngoài thấy mái, bước vào trong mái mờ dần thấy nội thất.
+- [ ] **T03 Nhân vật & Ánh sáng**
+  - Mục tiêu: Sprite nhân vật 4 tông, animation nhún, lightmap quầng sáng đuốc/đèn lồng.
+  - Xong khi: nhân vật có chiều sâu và ánh sáng ban đêm/hầm ngục đẹp mắt.
 
 ### M04 – Chiến đấu cơ bản
 

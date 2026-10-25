@@ -1,6 +1,6 @@
 // client/js/05a-render-map.js
-// Render ban do toi uu theo chunk 16x16 tile (256x256 px), cache canvas phu va view frustum culling.
-// Phu thuoc: client/js/00-boot.js, client/js/04-camera.js, shared/01-constants.js, shared/02-enums.js.
+// Render ban do theo chunk 16x16 tile (256x256 px), bien the hash2(tx, ty), vien chuyen tiep bo bien va frustum culling.
+// Phu thuoc: client/js/00-boot.js, client/js/04-camera.js, client/js/02b-palette.js, shared/01-constants.js, shared/02-enums.js.
 
 (function (root) {
   'use strict';
@@ -15,35 +15,48 @@
   const MAP_TILES = S.CONST.MAP_TILES || 320;
   const CHUNKS_COUNT = MAP_TILES / CHUNK_TILES; // 20 chunks moi chieu
 
+  // Bang mau fallback theo chuan do sang moi (DEEP < SHALLOW < GRASS < SAND)
   const TILE_COLORS = {
-    0: '#1d4ed8',  // DEEP
-    1: '#38bdf8',  // SHALLOW
-    2: '#fde047',  // SAND
-    3: '#22c55e',  // GRASS
-    4: '#a16207',  // DIRT
-    5: '#94a3b8',  // STONE
-    6: '#475569',  // WALL
-    7: '#b45309',  // WOOD
-    8: '#bae6fd',  // ICE
-    9: '#dc2626',  // LAVA
-    10: '#f8fafc', // SNOW
-    11: '#ca8a04', // QUICKSAND
-    12: '#78350f', // DOCK
-    13: '#d97706', // BRIDGE
-    14: '#15803d', // TREE
-    15: '#334155', // HOUSE_WALL
-    16: '#cbd5e1'  // FLOOR
+    0: '#1a498b',  // DEEP (Lum: 67.77)
+    1: '#369ec9',  // SHALLOW (Lum: 138.99)
+    2: '#e2c275',  // SAND (Lum: 195.24)
+    3: '#4eb83a',  // GRASS (Lum: 152.37)
+    4: '#825127',  // DIRT
+    5: '#6b7a90',  // STONE
+    6: '#424d5d',  // WALL
+    7: '#733f1b',  // WOOD
+    8: '#96d0ea',  // ICE
+    9: '#b32b13',  // LAVA
+    10: '#d2e7f5', // SNOW
+    11: '#b38b34', // QUICKSAND
+    12: '#663516', // DOCK
+    13: '#80461c', // BRIDGE
+    14: '#298230', // TREE
+    15: '#523727', // HOUSE_WALL
+    16: '#545468'  // FLOOR
   };
 
   const TILE_NAMES = {
     0: 'deep', 1: 'shallow', 2: 'sand', 3: 'grass',
-    4: 'dirt', 5: 'rock', 6: 'wall', 7: 'wood',
-    8: 'ice', 9: 'lava', 10: 'snow', 11: 'sand',
-    12: 'dock', 13: 'bridge', 16: 'wall'
+    4: 'dirt', 5: 'stone', 6: 'wall', 7: 'wood',
+    8: 'ice', 9: 'lava', 10: 'snow', 11: 'quicksand',
+    12: 'dock', 13: 'bridge', 14: 'tree', 15: 'house_wall', 16: 'floor'
   };
+
+  // Ham bam xac dinh 2 chieu tu ART-REF muc 11 (chi dung o client, khong dung trong shared/mapgen)
+  function hash2(x, y) {
+    let h = (x * 374761393 + y * 668265263) ^ 0x5bd1e995;
+    h = Math.imul(h ^ (h >>> 13), 1274126177);
+    return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+  }
 
   let currentMap = null;
   const chunkCache = new Map();
+
+  function getTileSafe(tiles, tx, ty) {
+    if (!tiles || tx < 0 || tx >= MAP_TILES || ty < 0 || ty >= MAP_TILES) return 0;
+    return tiles[ty * MAP_TILES + tx];
+  }
 
   function getChunkCanvas(cx, cy) {
     const key = `${cx}_${cy}`;
@@ -77,16 +90,94 @@
         const px = ltx * TILE_PX;
         const py = lty * TILE_PX;
 
-        // Thu ve sprite tile neu da dinh nghia
-        const spriteId = 'tile_' + (TILE_NAMES[tileType] || 'sand');
-        const spr = (OP.SPR && OP.SPR.get) ? OP.SPR.get(spriteId) : null;
+        // 1. Chon bien the xac dinh 0, 1 hoac 2 bang hash2(tx, ty)
+        const v = Math.floor(hash2(tx, ty) * 3);
 
-        if (spr && spr.frames && spr.frames[0]) {
-          ctx.drawImage(spr.frames[0], px, py, TILE_PX, TILE_PX);
+        // 2. Ve sprite tile theo bien the v
+        const spriteId = 'tile_' + (TILE_NAMES[tileType] || tileType);
+        const spr = (OP.SPR && OP.SPR.get) ? (OP.SPR.get(spriteId) || OP.SPR.get('tile_' + tileType)) : null;
+
+        if (spr && spr.frames && spr.frames.length > 0) {
+          const frame = spr.frames[v % spr.frames.length] || spr.frames[0];
+          ctx.drawImage(frame, px, py, TILE_PX, TILE_PX);
         } else {
-          // Fallback ve pixel mau nen
-          ctx.fillStyle = TILE_COLORS[tileType] || '#1d4ed8';
+          // Fallback ve mau don
+          ctx.fillStyle = TILE_COLORS[tileType] || '#1a498b';
           ctx.fillRect(px, py, TILE_PX, TILE_PX);
+        }
+
+        // 3. Vien chuyen tiep o bo bien (Coastal Transition Edge)
+        if (tiles) {
+          const up = getTileSafe(tiles, tx, ty - 1);
+          const down = getTileSafe(tiles, tx, ty + 1);
+          const left = getTileSafe(tiles, tx - 1, ty);
+          const right = getTileSafe(tiles, tx + 1, ty);
+
+          // Cát giáp biển (Nước nông hoặc Biển sâu): dải ẩm & bọt sóng trắng
+          if (tileType === 2) { // SAND
+            if (up === 0 || up === 1) {
+              ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+              ctx.fillRect(px, py, TILE_PX, 1);
+              ctx.fillStyle = 'rgba(181, 146, 71, 0.5)';
+              ctx.fillRect(px, py + 1, TILE_PX, 1);
+            }
+            if (down === 0 || down === 1) {
+              ctx.fillStyle = 'rgba(181, 146, 71, 0.5)';
+              ctx.fillRect(px, py + TILE_PX - 2, TILE_PX, 1);
+              ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+              ctx.fillRect(px, py + TILE_PX - 1, TILE_PX, 1);
+            }
+            if (left === 0 || left === 1) {
+              ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+              ctx.fillRect(px, py, 1, TILE_PX);
+              ctx.fillStyle = 'rgba(181, 146, 71, 0.5)';
+              ctx.fillRect(px + 1, py, 1, TILE_PX);
+            }
+            if (right === 0 || right === 1) {
+              ctx.fillStyle = 'rgba(181, 146, 71, 0.5)';
+              ctx.fillRect(px + TILE_PX - 2, py, 1, TILE_PX);
+              ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+              ctx.fillRect(px + TILE_PX - 1, py, 1, TILE_PX);
+            }
+          }
+          // Nước nông giáp biển sâu: gradient xanh sẫm
+          else if (tileType === 1) { // SHALLOW
+            if (up === 0) {
+              ctx.fillStyle = 'rgba(26, 73, 139, 0.45)';
+              ctx.fillRect(px, py, TILE_PX, 2);
+            }
+            if (down === 0) {
+              ctx.fillStyle = 'rgba(26, 73, 139, 0.45)';
+              ctx.fillRect(px, py + TILE_PX - 2, TILE_PX, 2);
+            }
+            if (left === 0) {
+              ctx.fillStyle = 'rgba(26, 73, 139, 0.45)';
+              ctx.fillRect(px, py, 2, TILE_PX);
+            }
+            if (right === 0) {
+              ctx.fillStyle = 'rgba(26, 73, 139, 0.45)';
+              ctx.fillRect(px + TILE_PX - 2, py, 2, TILE_PX);
+            }
+          }
+          // Cỏ giáp cát: viền cỏ rủ
+          else if (tileType === 3) { // GRASS
+            if (up === 2) {
+              ctx.fillStyle = 'rgba(50, 124, 36, 0.5)';
+              ctx.fillRect(px, py, TILE_PX, 1);
+            }
+            if (down === 2) {
+              ctx.fillStyle = 'rgba(50, 124, 36, 0.5)';
+              ctx.fillRect(px, py + TILE_PX - 1, TILE_PX, 1);
+            }
+            if (left === 2) {
+              ctx.fillStyle = 'rgba(50, 124, 36, 0.5)';
+              ctx.fillRect(px, py, 1, TILE_PX);
+            }
+            if (right === 2) {
+              ctx.fillStyle = 'rgba(50, 124, 36, 0.5)';
+              ctx.fillRect(px + TILE_PX - 1, py, 1, TILE_PX);
+            }
+          }
         }
       }
     }

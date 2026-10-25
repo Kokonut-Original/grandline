@@ -31,11 +31,11 @@
     setupEl.className = 'lobby-setup';
 
     const nameLabel = document.createElement('label');
-    nameLabel.textContent = 'Ten Hai Tac: ';
+    nameLabel.textContent = 'Tên Hải Tặc: ';
     const nameInput = document.createElement('input');
     nameInput.type = 'text';
     nameInput.maxLength = 24;
-    nameInput.value = localStorage.getItem('op_name') || `Hai tac #${Math.floor(Math.random() * 900 + 100)}`;
+    nameInput.value = localStorage.getItem('op_name') || `Hải Tặc #${Math.floor(Math.random() * 900 + 100)}`;
     nameLabel.appendChild(nameInput);
     setupEl.appendChild(nameLabel);
 
@@ -56,9 +56,9 @@
       return { wrap, inp };
     }
 
-    const hatColor = createColorPicker('Non:', 'op_color_hat', '#d9534f');
-    const shirtColor = createColorPicker('Ao:', 'op_color_shirt', '#337ab7');
-    const hairColor = createColorPicker('Toc:', 'op_color_hair', '#292b2c');
+    const hatColor = createColorPicker('Nón:', 'op_color_hat', '#d9534f');
+    const shirtColor = createColorPicker('Áo:', 'op_color_shirt', '#337ab7');
+    const hairColor = createColorPicker('Tóc:', 'op_color_hair', '#292b2c');
 
     colorsWrap.appendChild(hatColor.wrap);
     colorsWrap.appendChild(shirtColor.wrap);
@@ -67,9 +67,9 @@
 
     const saveBtn = document.createElement('button');
     saveBtn.className = 'pixel-btn';
-    saveBtn.textContent = 'CAP NHAT';
+    saveBtn.textContent = 'CẬP NHẬT';
     saveBtn.onclick = function () {
-      const newName = nameInput.value.trim() || 'Hai tac';
+      const newName = nameInput.value.trim() || 'Hải Tặc';
       localStorage.setItem('op_name', newName);
       localStorage.setItem('op_color_hat', hatColor.inp.value);
       localStorage.setItem('op_color_shirt', shirtColor.inp.value);
@@ -93,7 +93,7 @@
     listWrap.className = 'lobby-list-wrap';
     const listTitle = document.createElement('div');
     listTitle.className = 'lobby-subtitle';
-    listTitle.textContent = 'DANH SACH TRONG PHONG';
+    listTitle.textContent = 'DANH SÁCH TRONG PHÒNG';
     listWrap.appendChild(listTitle);
 
     playerListEl = document.createElement('div');
@@ -108,13 +108,13 @@
 
     const hostTitle = document.createElement('div');
     hostTitle.className = 'lobby-subtitle';
-    hostTitle.textContent = 'DIEU KHIEN CUA HOST';
+    hostTitle.textContent = 'ĐIỀU KHIỂN CỦA HOST';
     hostPanelEl.appendChild(hostTitle);
 
     const botWrap = document.createElement('div');
     botWrap.className = 'host-cfg-row';
     const botLbl = document.createElement('label');
-    botLbl.textContent = 'So luong Bot: ';
+    botLbl.textContent = 'Số lượng Bot: ';
     botInputEl = document.createElement('input');
     botInputEl.type = 'number';
     botInputEl.min = '0';
@@ -132,7 +132,7 @@
 
     const startBtn = document.createElement('button');
     startBtn.className = 'pixel-btn start-btn';
-    startBtn.textContent = 'BAT DAU TRAN';
+    startBtn.textContent = 'BẮT ĐẦU TRẬN';
     startBtn.onclick = function () {
       OP.NET.send({ t: 'start' });
     };
@@ -205,7 +205,7 @@
         nameText += ' [HOST]';
       }
       if (p.id === youId) {
-        nameText += ' (Ban)';
+        nameText += ' (Bạn)';
       }
       nameSpan.textContent = nameText;
       item.appendChild(nameSpan);

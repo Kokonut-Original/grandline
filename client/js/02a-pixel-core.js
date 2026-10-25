@@ -32,7 +32,7 @@
   // Tao ma tran 2D diem anh tu chuoi va palette, tu sinh vien den 1px
   function pixelMatrix(rows, palette, options) {
     const opts = options || {};
-    const outlineColor = opts.outline || (PAL.OUTLINE || '#111111');
+    const outlineColor = opts.outline || (PAL.OUTLINE || '#160e22');
     const noOutline = !!opts.noOutline;
     const expand = !!opts.expand;
 

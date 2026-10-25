@@ -588,3 +588,4 @@ Mỗi 10 giây ghi một dòng `perf`: thời gian tick trung bình và lớn nh
 | Ngày | Task | Thay đổi |
 |---|---|---|
 | — | — | Bản đầu |
+| 2026-10-26 | M03B-T01 | Đổi chuẩn palette/viền, không đổi tên hay schema |

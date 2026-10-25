@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <title>One Piece Battleground – Sprite Viewer</title>
+  <title>One Piece Battleground – Bộ Xem Sprite & Palette M03B-T01</title>
   <style>
     @font-face {
       font-family: 'VT323';
@@ -94,6 +94,7 @@
       border: 1px solid #334155;
       border-radius: 4px;
       margin-bottom: 8px;
+      position: relative;
     }
     canvas {
       image-rendering: pixelated;
@@ -110,6 +111,33 @@
       font-size: 14px;
       color: #94a3b8;
       margin-top: 4px;
+    }
+    .palette-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      background: #1e293b;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .palette-table th, .palette-table td {
+      padding: 8px 12px;
+      border: 1px solid #334155;
+      text-align: left;
+      font-size: 18px;
+    }
+    .palette-table th {
+      background: #0f172a;
+      color: #facc15;
+    }
+    .color-swatch {
+      display: inline-block;
+      width: 24px;
+      height: 24px;
+      border: 1px solid #000;
+      border-radius: 3px;
+      vertical-align: middle;
+      margin-right: 8px;
     }
   </style>
 
@@ -138,15 +166,17 @@
   <script src="../client/js/02d-sprites-items.js"></script>
   <script src="../client/js/02e-sprites-world.js"></script>
   <script src="../client/js/02f-sprites-fx.js"></script>
+  <script src="../client/js/05b-render-entities.js"></script>
 </head>
 <body>
 
-  <h1>ONE PIECE BATTLEGROUND – BỘ XEM SPRITE PIXEL</h1>
+  <h1>ONE PIECE BATTLEGROUND – BỘ XEM SPRITE & PALETTE (M03B-T01)</h1>
 
   <div class="status-bar" id="statusBar">
     <div>Đang nạp và đối chiếu sprite với data...</div>
   </div>
 
+  <div id="paletteSection"></div>
   <div id="content"></div>
 
   <script>
@@ -154,44 +184,51 @@
       const OP = window.OP || {};
       const S = window.OP_SHARED || {};
       const SPR = OP.SPR || {};
-
-      // Khoi tao sprite nguoi choi mau de hien thi
-      const playerBase = SPR.player({ hat: '#eab308', shirt: '#dc2626', hair: '#18181b' });
+      const PAL = OP.PAL || {};
 
       // 1. Kiem tra so khop data
       const missingList = [];
       let checkedCount = 0;
 
-      // Kiem tra 29 trai
       for (const fId in (S.FRUITS || {})) {
         checkedCount++;
         if (!SPR.get(`fruit_${fId}`)) missingList.push(`fruit_${fId}`);
       }
-
-      // Kiem tra 13 vu khi
       for (const wId in (S.WEAPONS || {})) {
         checkedCount++;
         if (!SPR.get(`weapon_${wId}`)) missingList.push(`weapon_${wId}`);
       }
-
-      // Kiem tra 14 vat pham
       for (const iId in (S.ITEMS || {})) {
         checkedCount++;
         if (!SPR.get(`item_${iId}`)) missingList.push(`item_${iId}`);
       }
-
-      // Kiem tra 4 thuyen
       for (const bId in (S.BOATS || {})) {
         checkedCount++;
         if (!SPR.get(`boat_${bId}`)) missingList.push(`boat_${bId}`);
       }
 
-      // Cap nhat thanh trang thai
+      // Kiem tra 17 tile co du 3 bien the
+      const tileDefs = [
+        'deep', 'shallow', 'sand', 'grass', 'dirt', 'stone', 'wall', 'wood',
+        'ice', 'lava', 'snow', 'quicksand', 'dock', 'bridge', 'tree', 'house_wall', 'floor'
+      ];
+      let tileVariantsCount = 0;
+      for (let t = 0; t < tileDefs.length; t++) {
+        const name = tileDefs[t];
+        for (let v = 0; v < 3; v++) {
+          if (SPR.get(`tile_${name}_v${v}`)) {
+            tileVariantsCount++;
+          } else {
+            missingList.push(`tile_${name}_v${v}`);
+          }
+        }
+      }
+
       const statusBar = document.getElementById('statusBar');
       if (missingList.length === 0) {
         statusBar.innerHTML = `
-          <div><strong>ĐỐI CHIẾU DỮ LIỆU:</strong> Đã kiểm tra ${checkedCount} đối tượng từ data shared.</div>
-          <div class="badge-pass">TẤT CẢ SPRITE HỢP LỆ (0 THIẾU)</div>
+          <div><strong>ĐỐI CHIẾU DỮ LIỆU:</strong> Đã kiểm tra ${checkedCount} đối tượng data + 17 TILE (đủ ${tileVariantsCount} biến thể).</div>
+          <div class="badge-pass">TẤT CẢ SPRITE & BIẾN THỂ HỢP LỆ (0 THIẾU)</div>
         `;
       } else {
         statusBar.innerHTML = `
@@ -200,45 +237,90 @@
         `;
       }
 
-      // 2. Render danh muc
+      // 2. Bang mau Palette Terrain & Do sang
+      const palSec = document.getElementById('paletteSection');
+      const ter = PAL.TERRAIN || {};
+      let palHtml = `
+        <div class="category-title">
+          <span>BẢNG MÀU PALETTE 4 TÔNG & ĐỘ SÁNG ĐO ĐƯỢC (W3C LUMINANCE)</span>
+          <span>Viền sprite: ${PAL.OUTLINE}</span>
+        </div>
+        <table class="palette-table">
+          <tr>
+            <th>Loại vật liệu</th>
+            <th>Tông Tối (Shadow)</th>
+            <th>Tông Vừa (Mid-tone)</th>
+            <th>Tông Sáng (Highlight)</th>
+            <th>Điểm nhấn (Accent)</th>
+            <th>Độ sáng Mid (Y)</th>
+          </tr>
+      `;
+
+      for (const key in ter) {
+        const item = ter[key];
+        const lum = PAL.luminance ? PAL.luminance(item.mid).toFixed(2) : '-';
+        palHtml += `
+          <tr>
+            <td><strong>${item.name || key}</strong> (${key})</td>
+            <td><span class="color-swatch" style="background:${item.shadow}"></span>${item.shadow}</td>
+            <td><span class="color-swatch" style="background:${item.mid}"></span>${item.mid}</td>
+            <td><span class="color-swatch" style="background:${item.high}"></span>${item.high}</td>
+            <td><span class="color-swatch" style="background:${item.accent}"></span>${item.accent}</td>
+            <td><strong>${lum}</strong></td>
+          </tr>
+        `;
+      }
+      palHtml += `</table>`;
+      palSec.innerHTML = palHtml;
+
+      // 3. Render danh muc Sprites & Bien the
+      const playerBase = SPR.player ? SPR.player({ hat: '#eab308', shirt: '#dc2626', hair: '#18181b' }) : 'p_default';
+
+      // Tao danh sach cac tile kem bien the
+      const tileSprites = [];
+      tileDefs.forEach(name => {
+        tileSprites.push(`tile_${name}_v0`, `tile_${name}_v1`, `tile_${name}_v2`);
+      });
+
       const categories = [
         {
-          title: '1. NGƯỜI CHƠI CHIBI (16×24, 3 HƯỚNG)',
+          title: '1. TILE BẢN ĐỒ 17 LOẠI × 3 BIẾN THỂ (V0 CHUẨN, V1 ĐỐM/BỌT, V2 NỨT/RÃNH)',
+          sprites: tileSprites
+        },
+        {
+          title: '2. NGƯỜI CHƠI CHIBI KÈM BÓNG ĐỔ ELIP (rgba(0,0,0,.35))',
           sprites: [
             `${playerBase}_down_walk`, `${playerBase}_down_idle`,
             `${playerBase}_up_walk`, `${playerBase}_up_idle`,
             `${playerBase}_side_walk`, `${playerBase}_side_idle`
-          ]
+          ],
+          hasShadow: true
         },
         {
-          title: '2. 29 TRÁI ÁC QUỶ (LOGIA, PARAMECIA, ZOAN)',
+          title: '3. 29 TRÁI ÁC QUỶ (LOGIA, PARAMECIA, ZOAN)',
           sprites: Object.keys(S.FRUITS || {}).map(id => `fruit_${id}`)
         },
         {
-          title: '3. 13 VŨ KHÍ (KIẾM, GẬY, SÚNG)',
+          title: '4. 13 VŨ KHÍ (KIẾM, GẬY, SÚNG)',
           sprites: Object.keys(S.WEAPONS || {}).map(id => `weapon_${id}`)
         },
         {
-          title: '4. 14 ĐỒ DÙNG & VẬT PHẨM (TIÊU HAO, GIÁP, DIAL, HAKI)',
+          title: '5. 14 ĐỒ DÙNG & VẬT PHẨM (TIÊU HAO, GIÁP, DIAL, HAKI)',
           sprites: Object.keys(S.ITEMS || {}).map(id => `item_${id}`)
         },
         {
-          title: '5. BẢN ĐỒ & THẾ GIỚI (TILE, CÂY, NHÀ, RƯƠNG)',
+          title: '6. CÂY CỐI, NHÀ CỬA & RƯƠNG BÁU KÈM BÓNG ĐỔ',
           sprites: [
-            'tile_deep', 'tile_shallow', 'tile_sand', 'tile_grass', 'tile_rock',
-            'tile_dirt', 'tile_ice', 'tile_snow', 'tile_lava', 'tile_wood', 'tile_bridge', 'tile_dock', 'tile_wall',
             'tree_palm', 'tree_pine', 'tree_jungle',
             'house_small', 'house_wood', 'house_stone',
             'chest_wood', 'chest_iron', 'chest_gold'
-          ]
+          ],
+          hasShadow: true
         },
         {
-          title: '6. THUYỀN CHIẾN & CHIẾN HẠM',
-          sprites: ['boat_dinghy', 'boat_waver', 'boat_sloop', 'boat_warship', 'warship_launch']
-        },
-        {
-          title: '7. HIỆU ỨNG CHIẾN ĐẤU & BIỂU CẢM KHÁN GIẢ',
-          sprites: ['fx_slash', 'fx_bullet', 'fx_explosion', 'fx_fire', 'fx_ice', 'fx_spark', 'emote_laugh', 'emote_shock', 'emote_cry', 'emote_clap']
+          title: '7. THUYỀN CHIẾN & CHIẾN HẠM KÈM BÓNG ĐỔ',
+          sprites: ['boat_dinghy', 'boat_waver', 'boat_sloop', 'boat_warship', 'warship_launch'],
+          hasShadow: true
         }
       ];
 
@@ -267,12 +349,26 @@
           const frameCvs = spr.frames[0];
           const zoom = Math.min(3, Math.floor(64 / Math.max(spr.w, spr.h))) || 2;
 
-          canvas.width = spr.w * zoom;
-          canvas.height = spr.h * zoom;
+          canvas.width = 64;
+          canvas.height = 64;
 
           const ctx = canvas.getContext('2d');
           ctx.imageSmoothingEnabled = false;
-          ctx.drawImage(frameCvs, 0, 0, canvas.width, canvas.height);
+
+          // Neu co bong do thi ve bong elip o day
+          if (cat.hasShadow) {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+            ctx.beginPath();
+            const r = Math.round(spr.w * 0.4);
+            ctx.ellipse(32, 48, r, Math.round(r * 0.45), 0, 0, Math.PI * 2);
+            ctx.fill();
+          }
+
+          const drawW = spr.w * zoom;
+          const drawH = spr.h * zoom;
+          const dx = Math.round((64 - drawW) / 2);
+          const dy = Math.round((64 - drawH) / 2);
+          ctx.drawImage(frameCvs, dx, dy, drawW, drawH);
 
           container.appendChild(canvas);
           card.appendChild(container);
