@@ -5,6 +5,7 @@ Không tạo file ngoài danh sách này. Muốn thêm file: cập nhật tài l
 ```
 onepiece-br/
 ├── 00-QUY-TRINH-AI.md
+├── TIEP.md                   bàn giao cho phiên kế tiếp (task, file cần đọc, ghi chú); viết lại cuối mỗi task
 ├── package.json              deps: ws | scripts: start, dev, test
 ├── .gitignore                node_modules, logs
 ├── docs/
@@ -23,7 +24,7 @@ onepiece-br/
 │   ├── 03-protocol.js        MSG, mô tả trường của message
 │   ├── 04-keybinds.js        BTN, KEYS
 │   ├── 05-rng.js             RNG có seed (mulberry32), hàm hash
-│   ├── 10-data-fruits.js     29 trái
+│   ├── 10-data-fruits.js     16 trái + S.FRUIT_SOURCES (trái rơi ở đâu theo bậc)
 │   ├── 11-data-weapons.js
 │   ├── 12-data-items.js      tiêu hao, giáp, dial, mảnh haki, bí kíp, awaken + LOOT_POOLS
 │   ├── 13-data-bosses.js
@@ -52,15 +53,15 @@ onepiece-br/
 │   ├── airdrop.js
 │   ├── bosses.js
 │   ├── boats.js              thuyền + Hải Vương
-│   ├── events.js             Buster Call, truy nã, Tứ Hoàng, thức tỉnh
+│   ├── events.js             truy nã, Tứ Hoàng, thức tỉnh (buff chung)
 │   ├── endgame.js            thứ hạng, bục vinh danh, lệnh truy nã, thống kê
 │   ├── snapshot.js           AOI + đóng gói snap
 │   ├── devcmd.js
 │   ├── log.js
 │   ├── fruits/
-│   │   ├── index.js          nạp và kiểm tra đủ 29 file
+│   │   ├── index.js          nạp và kiểm tra đủ 16 file
 │   │   ├── _helpers.js       tia, nón, vòng tròn, dash, tạo vùng... dùng chung
-│   │   └── <id>.js × 29      mera.js, magu.js, ... tori_falcon.js
+│   │   └── <id>.js × 16      mera.js, magu.js, ... tori_phoenix.js
 │   ├── bots/
 │   │   ├── brain.js          máy trạng thái bot
 │   │   ├── nav.js            dò đường trên lưới tile (A* thô, có cache)
@@ -103,7 +104,7 @@ onepiece-br/
     ├── requirements.txt      websockets
     ├── run_all.py            chạy mọi bước kiểm tra, in PASS/FAIL tổng
     ├── check_static.py       luật code, file tồn tại, thứ tự script, node --check
-    ├── check_data.js         nạp shared bằng node, kiểm tra dữ liệu (29 trái, enum hợp lệ, id khớp file)
+    ├── check_data.js         nạp shared bằng node, kiểm tra dữ liệu (16 trái, enum hợp lệ, id khớp file)
     ├── smoke_test.py         bật server --dev --seed 1 --headless-test, 4 client giả chơi 20s
     ├── stress_test.py        32 client giả chơi 90s, đọc dòng perf trong log
     └── sprite-viewer.html    xem toàn bộ sprite (nạp shared + 02*.js)

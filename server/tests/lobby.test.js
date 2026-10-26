@@ -61,10 +61,11 @@ module.exports = {
     match.onClientMessage(client1, {
       t: 'cfg',
       bots: 8,
-      botMix: { easy: 0.5, normal: 0.3, hard: 0.2 }
+      botMix: { hard: 0.7 }
     });
     assert.strictEqual(match.botsCount, 8, 'Host phai doi duoc so bot');
-    assert.strictEqual(match.botMix.easy, 0.5, 'Host phai doi duoc botMix');
+    assert.strictEqual(match.botMix.hard, 0.7, 'Host phai doi duoc botMix');
+    assert.strictEqual(match.botMix.normal, 0.3, 'normal phai la phan con lai');
     assert.ok(net.broadcasts.length > 0, 'Phai broadcast lobby sau khi doi cfg');
 
     // 5. Test chat

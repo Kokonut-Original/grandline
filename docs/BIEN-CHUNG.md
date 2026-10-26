@@ -155,10 +155,6 @@ CommonJS. Mỗi file `module.exports = { ... }`.
 | AIRDROP_START_SEC | 180 | Thính đầu tiên |
 | AIRDROP_EVERY_SEC | 150 | Chu kỳ thính |
 | AIRDROP_OPEN_SEC | 3 | Thời gian mở thính |
-| BUSTER_AT_SEC | [480, 900] | Thời điểm 2 lần Buster Call |
-| BUSTER_WARN_SEC | 30 | Thời gian cảnh báo |
-| BUSTER_DUR_SEC | 20 | Thời gian pháo kích |
-| BUSTER_DMG | 35 | Sát thương mỗi phát |
 | YONKO_UPDATE_SEC | 30 | Chu kỳ cập nhật Tứ Hoàng |
 | YONKO_REVEAL_EVERY | 45 | Chu kỳ lộ vị trí |
 | YONKO_REVEAL_SEC | 5 | Thời gian lộ vị trí |
@@ -208,7 +204,7 @@ Mọi enum dùng `Object.freeze`, giá trị là chuỗi.
 | PHASE | LOBBY, LAUNCH, PLAY, END |
 | CROSS | NONE, SHORT, FLY, TELEPORT |
 | STATUS | burn, slow, stun, root, poison, fruitLock, wet, invuln, silence, negative, airborne, intangibleOff |
-| BOT_LEVEL | easy, normal, hard |
+| BOT_LEVEL | normal, hard |
 | EMOTE | laugh, shock, cry, clap |
 
 **TILE (số, dùng trong map)**
@@ -251,7 +247,6 @@ mera: {
   passive: { desc: '...', burnSec: 3 },
   q: { name: '...', cd: 5, dmg: 14, dmgType: 'FIRE', range: 160, desc: '...' },
   e: { ... }, r: { ... },
-  awaken: { desc: '...' },
   sfx: { q: 'fire', e: 'fire', r: 'explosion' },
   color: '#ff6a00',                 // màu chủ đạo cho hiệu ứng / icon
 }
@@ -264,6 +259,8 @@ yoru: {
   ammo: null | { mag, reload },
   special: { ... }, sfx: 'slash',
 }
+
+// S.FRUIT_SOURCES (10): { C: ['GROUND'], B: ['GROUND','CHEST'], A: ['CHEST','BOSS'], S: ['BOSS','AIRDROP'], MYTHIC: ['AIRDROP'] }
 
 // S.ITEMS (12): consumable, armor, dial, haki shard, scroll, awaken
 meat:      { id, name, kind: 'CONSUMABLE', tier: 'C', useSec: 2, heal: 40, stack: 3 }
@@ -433,7 +430,6 @@ Ngay sau `welcome`, server gửi thêm 1 message `phase` (phase hiện tại) đ
 { e: 'roku',  src, id }
 { e: 'land',  src, x, y }
 { e: 'airdrop', x, y, stage: 'incoming' | 'landed' | 'opened' }
-{ e: 'buster', island, stage: 'warn' | 'start' | 'end' }
 { e: 'shell', x, y, tLand }
 { e: 'yonko', ids: [...] }
 { e: 'reveal', ids: [...], pos: [[x, y]...] }
@@ -520,7 +516,6 @@ module.exports = {
   onEat(p, ctx) {},              // tùy chọn
   onTick(p, dt, ctx) {},         // tùy chọn (nội tại)
   castQ(p, ctx) {}, castE(p, ctx) {}, castR(p, ctx) {},
-  castRAwaken(p, ctx) {},        // bắt buộc từ M11-T05
   onHitDealt(p, target, dmgInfo, ctx) {},   // tùy chọn
   onDamaged(p, info, ctx) { return info; }, // tùy chọn, chạy ở bước 4
 };
@@ -532,7 +527,9 @@ Biến `ctx`:
 ctx = { world, match, combat, ents, now, dt, spawnProj, spawnHazard, emit, rng, S }
 ```
 
-`fruits/index.js` nạp đủ 29 file theo `Object.keys(S.FRUITS)`. Thiếu file nào thì server báo lỗi khi khởi động.
+`fruits/index.js` nạp đủ 16 file theo `Object.keys(S.FRUITS)`. Thiếu file nào thì server báo lỗi khi khởi động.
+
+Thức tỉnh là buff chung (R ×`AWAKEN_R_DMG_MULT`, hồi chiêu R ×`AWAKEN_R_CD_MULT`, hào quang), **không** có chiêu riêng nên không có `castRAwaken`.
 
 ---
 
@@ -596,7 +593,7 @@ Mỗi 10 giây ghi một dòng `perf`: thời gian tick trung bình và lớn nh
 | `--seed N` | Cố định seed map |
 | `--dev` | Bật lệnh dev |
 | `--bots N` | Số bot (mặc định: lấp đủ 32) |
-| `--fast` | Bo, thính, Buster Call nhanh gấp 4 |
+| `--fast` | Bo, thính nhanh gấp 4 |
 | `--no-launch` | Bỏ qua bắn đại bác, đặt người chơi ở đảo trung tâm |
 | `--headless-test` | Tự start trận khi có ≥ 2 client, dùng cho smoke test |
 
@@ -615,7 +612,6 @@ Mỗi 10 giây ghi một dòng `perf`: thời gian tick trung bình và lớn nh
 | `/spawn <bossId\|boatId>` | Tạo boss hoặc thuyền cạnh mình |
 | `/zone next` | Chuyển pha bo |
 | `/airdrop` | Gọi thính |
-| `/buster` | Gọi Buster Call |
 | `/awaken` | Thức tỉnh trái ngay |
 | `/bounty <n>` | Đặt truy nã |
 | `/end` | Kết thúc trận |
@@ -630,4 +626,5 @@ Mỗi 10 giây ghi một dòng `perf`: thời gian tick trung bình và lớn nh
 | 2026-10-26 | M03B-T01 | Đổi chuẩn palette/viền, không đổi tên hay schema |
 | 2026-10-26 | M03B-T01c | Đổi giá trị radius/center trong S.ISLANDS và tham số mapgen (schema thật dùng cx/cy, ghi lại ở M03B-T01e) |
 | 2026-10-26 | (ngoài kế hoạch) | Commit "tầm nhìn 1.5x" đã thêm `BTN.SPRINT`, `KEYS.SPRINT` và đổi `KEYS.ROKU1` sang KeyZ mà không ghi ở đây |
+| 2026-10-26 | Thu gọn phạm vi | Còn 16 trái (bỏ moku, gasu, yuki, hana, supa, doru, ito, nikyu, mochi, horo, ryu_allosaurus, uo_seiryu, tori_falcon). Thêm `S.FRUIT_SOURCES`. Bỏ Buster Call (CONST BUSTER_*, EV.BUSTER, `/buster`). `BOT_LEVEL` còn normal, hard. Thức tỉnh là buff chung, bỏ `castRAwaken`. Bot mặc định 60% hard / 40% normal |
 | 2026-10-26 | M03B-T01e | Bỏ `BTN.SPRINT`, `KEYS.SPRINT`; `KEYS.ROKU1` về lại ShiftLeft. Thêm CONST: INPUT_QUEUE_MAX, INPUT_BURST, MSG_MAX_BYTES, MSG_MAX_PER_SEC, CHAT_MAX_PER_SEC, SINK_MULT, SWIM_EXHAUST_DPS, SHALLOW_STAMINA_REGEN, QUICKSAND_MULT, ICE_KEEP, ICE_ACCEL. Thêm `S.MOVE` (shared/22-move.js). Sửa schema S.ISLANDS theo code. `snap.me` thêm water, fruitId, onBoatId, bỏ sprint. Server gửi `phase` ngay sau `welcome`. Lệnh dev qua `act`/chat, chỉ khi `--dev`. Player server dùng `fruitId`, `onBoatId`, `water` đúng mục 6 |

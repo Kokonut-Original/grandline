@@ -51,7 +51,7 @@ Không có nhân vật One Piece để chọn: người chơi là hải tặc ch
 - Hết 60 giây ai chưa bắn bị bắn tự động tới một đảo ngẫu nhiên.
 
 **PLAY**
-- Loot, đánh nhau, bo thu hẹp, thính, Buster Call, Tứ Hoàng (chi tiết bên dưới).
+- Loot, đánh nhau, bo thu hẹp, thính, Tứ Hoàng (chi tiết bên dưới).
 
 **END**
 - Còn 1 người sống thì kết thúc trận.
@@ -80,11 +80,6 @@ Không có nhân vật One Piece để chọn: người chơi là hải tặc ch
 - Thả bằng dù từ tàu tiếp tế, có khói tím nhìn thấy từ xa. Mở mất 3 giây, bị đánh thì bị ngắt.
 - Đồ bên trong: trái bậc S hoặc Huyền Thoại, Mảnh Haki (có thể là Bá Vương), kiếm Saijo, Mảnh Thức Tỉnh.
 
-**Buster Call**
-- Xảy ra 2 lần, ở phút 8 và phút 15.
-- Chọn ngẫu nhiên 1 đảo đang có người, không phải đảo chứa tâm bo cuối.
-- Cảnh báo 30 giây (đỏ trên bản đồ + thông báo lớn), sau đó pháo kích 20 giây: đạn rơi ngẫu nhiên, có vòng báo trước 1 giây, mỗi phát 35 sát thương.
-
 **Tứ Hoàng & tiền truy nã**
 - Đơn vị tiền là Berry (฿), hiển thị theo triệu.
 - Hạ người chơi hoặc bot: +10 triệu + 25% truy nã của nạn nhân. Hạ boss: +5 triệu.
@@ -93,7 +88,7 @@ Không có nhân vật One Piece để chọn: người chơi là hải tặc ch
 
 **Thức tỉnh trái**
 - Điều kiện: (3 kill trở lên VÀ Haki Vũ Trang cấp 3) HOẶC dùng vật phẩm Mảnh Thức Tỉnh (chỉ có trong thính).
-- Hiệu ứng: R hồi nhanh hơn 30%, R mạnh hơn 50%, R đổi sang dạng riêng (cột "Thức tỉnh" ở mục 5), nhân vật có hào quang.
+- Hiệu ứng (buff chung, giống nhau cho mọi trái, không có chiêu riêng): R hồi nhanh hơn 30%, R mạnh hơn 50%, nhân vật có hào quang.
 
 **Khán giả**
 - Chết thì vào chế độ xem. Mặc định xem kẻ đã hạ mình. ←/→ để đổi người xem.
@@ -178,54 +173,51 @@ Không có nhân vật One Piece để chọn: người chơi là hải tặc ch
 
 ---
 
-## 5. 29 trái ác quỷ
+## 5. 16 trái ác quỷ
 
 Bậc: C, B, A, S, MYTHIC (Huyền Thoại).
 "Qua biển" là khả năng vượt nước của trái.
 
-### Logia (10)
+**Trái rơi ở đâu** (`S.FRUIT_SOURCES` trong `10-data-fruits.js`; mỗi trận mỗi trái 1 quả, khoảng một nửa người chơi không có trái):
 
-| id | Tên | Bậc | Nội tại | Q | E | R | Thức tỉnh | Kháng / Yếu |
-|---|---|---|---|---|---|---|---|---|
-| mera | Mera Mera (Lửa) | A | Đòn gây bỏng 3s | Hỏa quyền dạng tia thẳng | Bắn 3 viên đạn lửa | Cầu lửa lớn AoE | Biển lửa diện rộng, để lại nền cháy | Nhận ×2 từ MAGMA |
-| magu | Magu Magu (Dung nham) | S | Để lại vũng dung nham 4s | Nắm đấm dung nham | Rải vũng dung nham | Mưa thiên thạch dung nham (ra chiêu 1s) | Mặt đất quanh mình thành dung nham 20s | Ra chiêu chậm |
-| hie | Hie Hie (Băng) | A | Đòn làm chậm 30% | Giáo băng | Đóng băng mặt biển thành đường băng 20s (qua biển) | Đóng băng mục tiêu 1.5s | Đóng băng cả vùng lớn | FIRE ×1.5, MAGMA ×2 |
-| goro | Goro Goro (Sét) | S | Đòn đánh nhanh | Tia sét | Dịch chuyển ngắn bằng sét | Cột sét lớn | Sét lan sang 3 mục tiêu | Không gây sát thương lên gomu |
-| pika | Pika Pika (Ánh sáng) | S | Nhanh nhất game | Laser từ ngón tay | Dịch chuyển xa bằng ánh sáng (qua biển) | Mưa đạn ánh sáng | Chùm laser quét | Sát thương mỗi viên thấp |
-| suna | Suna Suna (Cát) | A | Đòn trúng giảm hồi máu 50% | Lốc cát đẩy lùi | Lưỡi cát chạy dọc mặt đất | Vùng cát lún rút máu | Cát lún hút cả thuyền | Bị ướt (vừa ra khỏi nước) thì mất vô hình 5s |
-| moku | Moku Moku (Khói) | B | Đòn trói làm chậm | Tay khói trói | Hóa khói bay lơ lửng 2s (qua biển ngắn) | Màn khói che tầm nhìn | Khói thành vòng giam | Sát thương thấp |
-| gasu | Gasu Gasu (Khí độc) | A | Đòn gây độc | Đám khí độc | Ném bom khí | Vùng độc lớn | Vùng độc to hơn, khóa chiêu 2s | Bị FIRE trúng thì khí của mình phát nổ |
-| yuki | Yuki Yuki (Tuyết) | B | Đòn làm chậm | Bão tuyết hình nón | Tường tuyết | Đàn thỏ tuyết lao tới | Bão tuyết làm chậm 60% cả vùng | FIRE ×1.5 |
-| yami | Yami Yami (Bóng tối) | MYTHIC | KHÔNG vô hình, nhận ×1.2 mọi sát thương | Hố đen hút địch lại gần | Chạm vào địch: vô hiệu trái địch 4s | Nhả lại toàn bộ đòn đã hút | Hút cả vùng lớn + vô hiệu trái 6s | Dễ bị dồn sát thương |
+| Bậc | Trái | Nguồn |
+|---|---|---|
+| C | bara, bomu | Mặt đất, trong nhà |
+| B | gomu, bari, hito_reindeer | Mặt đất, trong nhà, rương |
+| A | mera, hie, suna, neko_leopard | Rương, boss |
+| S | magu, goro, pika, ope | Boss, thính |
+| MYTHIC | yami, gura, tori_phoenix | Chỉ thính |
 
-### Paramecia (13)
+### Logia (6)
 
-| id | Tên | Bậc | Nội tại | Q | E | R | Thức tỉnh | Kháng / Yếu |
-|---|---|---|---|---|---|---|---|---|
-| gomu | Gomu Gomu (Cao su) | B | Đạn nảy ngược lại | Đấm dãn tay | Tự bắn mình qua eo biển hẹp ~6 tile (qua biển) | Gear 2: tốc độ & sát thương +30% trong 8s | Dạng trắng: địa hình quanh hóa cao su (địch đi chậm, mình nảy nhanh) | Miễn BLUNT, LIGHTNING, BULLET; SLASH ×1.3 |
-| bara | Bara Bara (Chia cắt) | C | — | Phóng tay ra xa | Tách thân bay ngắn (qua biển ngắn) | Né toàn bộ đòn trong 2s | Thân thể tách ra đánh 6 hướng | Miễn SLASH; EXPLOSION ×1.2 |
-| ope | Ope Ope (Phòng mổ) | S | Mạnh hơn khi đứng trong Room | Tạo Room bán kính 5 tile, tồn tại 6s | Đổi chỗ với vật hoặc địch trong Room | Đòn xuyên giáp, bỏ qua khiên | Room to gấp đôi, Shambles đổi được cả thính | Mỗi chiêu tốn thêm 10 thể lực |
-| gura | Gura Gura (Chấn động) | MYTHIC | Đòn đẩy lùi | Sóng chấn động hình nón | Đấm nứt không khí | Động đất cả vùng (ngoài biển: sóng thần lật thuyền) | Động đất toàn bộ đảo đang đứng | Hồi chiêu dài |
-| hana | Hana Hana (Mọc tay) | B | Trói từ xa | Mọc tay trói 1s | Quật ngã | Bàn tay khổng lồ | Mạng tay trói cả vùng | Máu tối đa −10 |
-| bomu | Bomu Bomu (Bom) | C | Miễn sát thương nổ của chính mình | Chạm vào là nổ | Ném mũi nổ | Tự nổ AoE (mất 15% máu) | Bất tử 3s rồi nổ cực lớn | Tự gây hại |
-| supa | Supa Supa (Lưỡi dao) | B | — | Xoay thân thép | Lao tới đâm | Bão lưỡi dao | Lưỡi dao quét 360° liên tục | SLASH ×0.5; BLUNT ×1.2 |
-| doru | Doru Doru (Sáp) | B | Có khiên | Dựng tường sáp | Áo giáp sáp (khiên 40) | Áo giáp sáp lớn | Dựng pháo đài sáp quanh mình | Khiên sáp nhận ×2 từ FIRE |
-| ito | Ito Ito (Chỉ) | A | Đi trên mây | Dây chỉ chém | Bám mây đi trên không 3s (qua biển) | Lồng chim thu hẹp | Lồng to, thu nhỏ nhanh | Hồi chiêu dài |
-| nikyu | Nikyu Nikyu (Bàn tay đẩy) | A | Phản đạn | Đẩy bật đòn đánh / đạn | Tự phóng mình sang đảo khác (hồi chiêu 45s, qua biển) | Bom khí nén | Hất văng mọi địch trong vùng ra xa | E hồi rất lâu |
-| bari | Bari Bari (Rào chắn) | B | Chắn phía trước | Khiên chắn đạn phía trước 3s | Rào chắn đẩy lùi | Lao tới bằng rào chắn | Bọc kín bản thân, miễn nhiễm 3s | Bị đánh từ sau lưng |
-| mochi | Mochi Mochi (Bánh dày) | A | Né đòn bằng biến dạng (15%) | Nắm đấm bánh dày | Dính chân địch 1.5s | Biến mặt đất thành bánh dày | Cả vùng thành bánh dày | Hồi chiêu dài |
-| horo | Horo Horo (Bóng ma) | B | Do thám | Ma tiêu cực: địch đứng yên 2s | Ma phát nổ | Ma xuyên tường bay đi do thám | 6 ma tiêu cực tự đuổi mục tiêu | Sát thương thấp |
+| id | Tên | Bậc | Nội tại | Q | E | R | Kháng / Yếu |
+|---|---|---|---|---|---|---|---|
+| mera | Mera Mera (Lửa) | A | Đòn gây bỏng 3s | Hỏa quyền dạng tia thẳng | Bắn 3 viên đạn lửa | Cầu lửa lớn AoE | Nhận ×2 từ MAGMA |
+| magu | Magu Magu (Dung nham) | S | Để lại vũng dung nham 4s | Nắm đấm dung nham | Rải vũng dung nham | Mưa thiên thạch dung nham (ra chiêu 1s) | Ra chiêu chậm |
+| hie | Hie Hie (Băng) | A | Đòn làm chậm 30% | Giáo băng | Đóng băng mặt biển thành đường băng 20s (qua biển) | Đóng băng mục tiêu 1.5s | FIRE ×1.5, MAGMA ×2 |
+| goro | Goro Goro (Sét) | S | Đòn đánh nhanh | Tia sét | Dịch chuyển ngắn bằng sét | Cột sét lớn | Không gây sát thương lên gomu |
+| pika | Pika Pika (Ánh sáng) | S | Nhanh nhất game | Laser từ ngón tay | Dịch chuyển xa bằng ánh sáng (qua biển) | Mưa đạn ánh sáng | Sát thương mỗi viên thấp |
+| suna | Suna Suna (Cát) | A | Đòn trúng giảm hồi máu 50% | Lốc cát đẩy lùi | Lưỡi cát chạy dọc mặt đất | Vùng cát lún rút máu | Bị ướt (vừa ra khỏi nước) thì mất vô hình 5s |
+| yami | Yami Yami (Bóng tối) | MYTHIC | KHÔNG vô hình, nhận ×1.2 mọi sát thương | Hố đen hút địch lại gần | Chạm vào địch: vô hiệu trái địch 4s | Nhả lại toàn bộ đòn đã hút | Dễ bị dồn sát thương |
 
-### Zoan (6)
+### Paramecia (6)
 
-| id | Tên | Bậc | Nội tại | Q | E | R | Thức tỉnh | Kháng / Yếu |
-|---|---|---|---|---|---|---|---|---|
-| neko_leopard | Neko Neko – Báo | A | Chạy +15%, Lục Thức hồi nhanh hơn 20% | Vồ mồi | Dạng lai 8s | Chém liên hoàn | Thêm 3 nhát chém, chạy +30% | Không có đòn xa |
-| ryu_allosaurus | Ryu Ryu – Khủng long | A | Máu tối đa +30 | Cắn | Lao húc | Biến thành khủng long | Biến hình hồi 30% máu | Thân to, dễ trúng |
-| hito_reindeer | Hito Hito – Tuần lộc | B | Tự hồi 1 máu/giây | Đấm mạnh | Chạy nhanh 4s | Dạng quái vật (cần và tiêu 1 Rumble Ball) | Không cần Rumble Ball | Sát thương thường |
-| tori_phoenix | Tori Tori – Phượng hoàng | MYTHIC | Tự hồi 3 máu/giây khi không bị đánh trong 3s | Đá lửa xanh | Bay (qua biển, tốn 8 thể lực/giây) | Hồi đầy máu (1 lần mỗi trận) | Hồi sinh 1 lần với 40% máu | Sát thương trung bình |
-| uo_seiryu | Uo Uo – Thanh Long | MYTHIC | Máu tối đa +40 | Phun lửa | Bay rồng (qua biển) | Lốc xoáy | Bay lâu gấp đôi, phun lửa liên tục | Thân rất to |
-| tori_falcon | Tori Tori – Chim ưng | B | Bay ngắn | Bổ nhào | Bay 3s (qua biển ngắn) | Lốc cánh | Bay không tốn thể lực 10s | Máu tối đa −10 |
+| id | Tên | Bậc | Nội tại | Q | E | R | Kháng / Yếu |
+|---|---|---|---|---|---|---|---|
+| gomu | Gomu Gomu (Cao su) | B | Đạn nảy ngược lại | Đấm dãn tay | Tự bắn mình qua eo biển hẹp ~6 tile (qua biển) | Gear 2: tốc độ & sát thương +30% trong 8s | Miễn BLUNT, LIGHTNING, BULLET; SLASH ×1.3 |
+| bara | Bara Bara (Chia cắt) | C | — | Phóng tay ra xa | Tách thân bay ngắn (qua biển ngắn) | Né toàn bộ đòn trong 2s | Miễn SLASH; EXPLOSION ×1.2 |
+| ope | Ope Ope (Phòng mổ) | S | Mạnh hơn khi đứng trong Room | Tạo Room bán kính 5 tile, tồn tại 6s | Đổi chỗ với vật hoặc địch trong Room | Đòn xuyên giáp, bỏ qua khiên | Mỗi chiêu tốn thêm 10 thể lực |
+| gura | Gura Gura (Chấn động) | MYTHIC | Đòn đẩy lùi | Sóng chấn động hình nón | Đấm nứt không khí | Động đất cả vùng (ngoài biển: sóng thần lật thuyền) | Hồi chiêu dài |
+| bomu | Bomu Bomu (Bom) | C | Miễn sát thương nổ của chính mình | Chạm vào là nổ | Ném mũi nổ | Tự nổ AoE (mất 15% máu) | Tự gây hại |
+| bari | Bari Bari (Rào chắn) | B | Chắn phía trước | Khiên chắn đạn phía trước 3s | Rào chắn đẩy lùi | Lao tới bằng rào chắn | Bị đánh từ sau lưng |
+
+### Zoan (4)
+
+| id | Tên | Bậc | Nội tại | Q | E | R | Kháng / Yếu |
+|---|---|---|---|---|---|---|---|
+| neko_leopard | Neko Neko – Báo | A | Chạy +15%, Lục Thức hồi nhanh hơn 20% | Vồ mồi | Dạng lai 8s | Chém liên hoàn | Không có đòn xa |
+| hito_reindeer | Hito Hito – Tuần lộc | B | Tự hồi 1 máu/giây | Đấm mạnh | Chạy nhanh 4s | Dạng quái vật (cần và tiêu 1 Rumble Ball) | Sát thương thường |
+| tori_phoenix | Tori Tori – Phượng hoàng | MYTHIC | Tự hồi 3 máu/giây khi không bị đánh trong 3s | Đá lửa xanh | Bay (qua biển, tốn 8 thể lực/giây) | Hồi đầy máu (1 lần mỗi trận) | Sát thương trung bình |
 
 ---
 
@@ -320,8 +312,12 @@ Phím: Shift = ô 1, Space = ô 2, C = ô 3.
 
 **Bot**
 - Máy trạng thái: LAUNCH → LOOT → ROAM → FIGHT → FLEE (máu dưới 30%) → ZONE (chạy vào bo) → BOAT (khi cần qua biển).
-- Độ khó: easy (phản xạ 600ms, ngắm lệch nhiều), normal (350ms), hard (180ms, biết né, dùng Haki Quan Sát).
-- Tỉ lệ mặc định 40% easy / 40% normal / 20% hard, host chỉnh được.
+- Mặc định 10 người chơi + 22 bot = 32, bot rải ngẫu nhiên trên các đảo.
+- Chỉ 2 mức (bot không phải "đồ cho không", có thể hay hơn người chơi thật):
+  - normal: phản xạ 350ms, ngắm đón đầu có sai số, né vùng báo trước.
+  - hard: phản xạ 180ms, ngắm đón đầu chuẩn, né đạn, dùng Haki Quan Sát, biết khắc chế trái (Logia, nước, gomu...).
+- Tỉ lệ mặc định 60% hard / 40% normal, host chỉnh được.
+- Hạ bot được truy nã như hạ người chơi thật.
 - Tên bot kiểu hải tặc, tạo ngẫu nhiên.
 
 ---
@@ -358,7 +354,7 @@ Khi xem trận: ←/→ đổi người xem, 1–4 gửi biểu cảm.
 - Góc dưới phải: ô vũ khí, Lục Thức, Dial.
 - Góc trên phải: minimap.
 - Góc trên trái: số người còn sống, số kill, truy nã.
-- Giữa trên: đồng hồ bo, thông báo lớn (Buster Call, thính, Tứ Hoàng).
+- Giữa trên: đồng hồ bo, thông báo lớn (thính, Tứ Hoàng).
 - Bên phải: kill feed.
 - Số sát thương nảy lên trên đầu mục tiêu, màu theo loại sát thương.
 

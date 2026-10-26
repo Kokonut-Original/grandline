@@ -34,7 +34,8 @@ class MatchManager {
     this.hostId = null;
 
     this.botsCount = (typeof flags.bots === 'number') ? flags.bots : (C.MAX_PLAYERS - 1);
-    this.botMix = { easy: 0.4, normal: 0.4, hard: 0.2 };
+    // Bot chi co 2 muc (bo easy): mac dinh 60% hard, 40% normal; host chinh trong lobby
+    this.botMix = { normal: 0.4, hard: 0.6 };
 
     this.net = null;
     this.currentTick = 0;
@@ -384,11 +385,12 @@ class MatchManager {
       this.botsCount = Math.max(0, Math.min(C.MAX_PLAYERS - 1, Math.floor(msg.bots)));
     }
     if (msg.botMix && typeof msg.botMix === 'object') {
-      this.botMix = {
-        easy: Number(msg.botMix.easy) || 0.4,
-        normal: Number(msg.botMix.normal) || 0.4,
-        hard: Number(msg.botMix.hard) || 0.2
-      };
+      // Ty le hard 0..1, normal = phan con lai (cho phep 0% hoac 100%)
+      const hard = Number(msg.botMix.hard);
+      if (Number.isFinite(hard)) {
+        const h = Math.max(0, Math.min(1, hard));
+        this.botMix = { normal: Math.round((1 - h) * 100) / 100, hard: h };
+      }
     }
     this.broadcastLobby();
   }

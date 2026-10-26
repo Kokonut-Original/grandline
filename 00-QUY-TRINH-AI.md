@@ -11,13 +11,15 @@ Gặp mâu thuẫn hoặc thông tin mơ hồ: DỪNG và hỏi người dùng, 
 
 ## 1. ĐẦU MỖI PHIÊN (bắt buộc, đúng thứ tự)
 
-1. Đọc hết file này.
-2. Đọc `docs/TIEN-DO.md`: xem mục "TASK HIỆN TẠI", bug tồn đọng, quyết định đã chốt.
-3. Đọc report mới nhất trong `reports/` (file có số lớn nhất).
-4. Đọc toàn bộ `docs/BIEN-CHUNG.md`.
-5. Đọc toàn bộ `docs/CAU-TRUC-THU-MUC.md`.
-6. Đọc `docs/CONTEXT.md`: toàn bộ ở phiên đầu tiên, các phiên sau đọc phần liên quan đến task.
-7. Đọc code của mọi file mà task sẽ đụng tới TRƯỚC khi sửa.
+Mỗi phiên (mỗi chat) chỉ làm **1 task**. Để tiết kiệm, chỉ đọc đúng những gì cần:
+
+1. Đọc `TIEP.md` (bàn giao từ phiên trước): task, model gợi ý, danh sách file cần đọc, ghi chú.
+2. Đọc các mục của file này mà TIEP.md chỉ ra (tối thiểu mục 2, 4, 6, 7).
+3. Đọc report mà TIEP.md chỉ ra (thường là report task trước hoặc report đang dở).
+4. `docs/BIEN-CHUNG.md`, `docs/CONTEXT.md`, `docs/CAU-TRUC-THU-MUC.md`, `docs/ART-REF.md`: **chỉ đọc mục liên quan đến task** (tra theo tiêu đề mục), không đọc cả file. Khi thêm tên/hằng/message mới thì bắt buộc đọc mục tương ứng của BIEN-CHUNG; khi thêm file thì đọc CAU-TRUC.
+5. Đọc code của mọi file mà task sẽ đụng tới TRƯỚC khi sửa.
+
+Nếu không có TIEP.md: đọc mục "TASK HIỆN TẠI" trong `docs/TIEN-DO.md` và report mới nhất.
 
 Sau khi đọc, viết tóm tắt 3–5 dòng:
 - Đang ở task nào
@@ -75,8 +77,8 @@ Sau khi đọc, viết tóm tắt 3–5 dòng:
 3. Code theo từng bước nhỏ. Sau mỗi bước chạy `node --check <file>`.
 4. Logic server mới phải có test trong `server/tests/`.
 5. Chạy **Double Check** (mục 4).
-6. Viết report, cập nhật TIEN-DO.
-7. **DỪNG lại**, gửi tóm tắt cho người dùng, chờ người dùng gõ "tiếp" mới sang task sau.
+6. Viết report, cập nhật TIEN-DO, **viết lại `TIEP.md`** cho task kế tiếp (task, model gợi ý theo tag trong TIEN-DO, file cần đọc, ghi chú).
+7. **DỪNG lại**, gửi tóm tắt cho người dùng, nhắc người dùng mở chat mới và gõ "tiếp".
 
 ---
 
@@ -136,6 +138,7 @@ Tất cả phải **PASS**. Dán output cuối vào report.
 ## Bug đã biết / việc còn dở
 ## Người dùng cần test tay
 ## Câu hỏi cho người dùng
+## Ghi chú cho task sau (cạm bẫy, quyết định vừa chốt, việc dở; chép sang TIEP.md)
 ## Task tiếp theo
 ```
 
@@ -144,4 +147,5 @@ Tất cả phải **PASS**. Dán output cuối vào report.
 ## 7. KẾT THÚC PHIÊN
 
 - TIEN-DO.md: đánh dấu `[x]` task đã xong, chuyển "TASK HIỆN TẠI" sang task kế tiếp, cập nhật bảng bug.
+- TIEP.md: viết lại cho phiên sau (xem mục 3 bước 6). Phiên sau chỉ dựa vào file này nên ghi đủ, ngắn gọn.
 - Không bao giờ kết thúc phiên khi code đang ở trạng thái chạy không được. Nếu phải dừng giữa chừng, ghi rõ vào report.

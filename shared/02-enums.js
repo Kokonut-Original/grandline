@@ -150,7 +150,6 @@
   });
 
   S.BOT_LEVEL = Object.freeze({
-    easy: 'easy',
     normal: 'normal',
     hard: 'hard'
   });

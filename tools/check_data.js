@@ -52,7 +52,6 @@ assert(S.CONST.PORT === 8080, 'S.CONST.PORT khong dung 8080');
 assert(S.CONST.TICK_HZ === 30, 'S.CONST.TICK_HZ khong dung 30');
 assert(S.CONST.SNAP_HZ === 20, 'S.CONST.SNAP_HZ khong dung 20');
 assert(S.CONST.MAX_PLAYERS === 32, 'S.CONST.MAX_PLAYERS khong dung 32');
-assert(Array.isArray(S.CONST.BUSTER_AT_SEC) && S.CONST.BUSTER_AT_SEC.length === 2, 'S.CONST.BUSTER_AT_SEC khong hop le');
 
 // 2. Kiem tra S.DMG & S.PHYSICAL
 console.log('2. Kiem tra S.DMG va S.PHYSICAL...');
@@ -87,7 +86,7 @@ assert(S.WATER.LAND === 0 && S.WATER.SHALLOW === 1 && S.WATER.DEEP === 2, 'S.WAT
 assert(S.PHASE.LOBBY && S.PHASE.LAUNCH && S.PHASE.PLAY && S.PHASE.END, 'S.PHASE thieu cac trang thai');
 assert(S.ENT.PLAYER && S.ENT.PROJ && S.ENT.ITEM && S.ENT.BOSS && S.ENT.BOAT, 'S.ENT thieu thuc the co ban');
 assert(S.STATUS.burn && S.STATUS.slow && S.STATUS.stun && S.STATUS.fruitLock, 'S.STATUS thieu trang thai');
-assert(S.BOT_LEVEL.easy && S.BOT_LEVEL.normal && S.BOT_LEVEL.hard, 'S.BOT_LEVEL thieu cap do');
+assert(S.BOT_LEVEL.normal && S.BOT_LEVEL.hard && Object.keys(S.BOT_LEVEL).length === 2, 'S.BOT_LEVEL phai co dung 2 cap normal, hard');
 
 // 6. Kiem tra Giao thuc mang & Input
 console.log('6. Kiem tra S.MSG, S.BTN, S.KEYS...');
@@ -110,7 +109,11 @@ assert(valA >= 0 && valA < 1, 'RNG.next() khong nam trong khoang [0, 1)');
 
 // 8. Kiem tra Danh muc Trai ac quy, Vu khi, Vat pham, Thuyen
 console.log('8. Kiem tra S.FRUITS, S.WEAPONS, S.ITEMS, S.BOATS...');
-assert(S.FRUITS && Object.keys(S.FRUITS).length === 29, `S.FRUITS phai co du 29 trai, hien tai: ${Object.keys(S.FRUITS || {}).length}`);
+assert(S.FRUITS && Object.keys(S.FRUITS).length === 16, `S.FRUITS phai co du 16 trai, hien tai: ${Object.keys(S.FRUITS || {}).length}`);
+assert(S.FRUIT_SOURCES && Object.keys(S.TIER).every(t => Array.isArray(S.FRUIT_SOURCES[t]) && S.FRUIT_SOURCES[t].length > 0), 'S.FRUIT_SOURCES phai co nguon roi cho moi bac');
+for (const f of Object.values(S.FRUITS || {})) {
+  assert(S.TIER[f.tier] !== undefined, `Trai ${f.id} co bac khong hop le: ${f.tier}`);
+}
 assert(S.WEAPONS && Object.keys(S.WEAPONS).length === 13, `S.WEAPONS phai co du 13 vu khi, hien tai: ${Object.keys(S.WEAPONS || {}).length}`);
 assert(S.ITEMS && Object.keys(S.ITEMS).length === 14, `S.ITEMS phai co du 14 vat pham, hien tai: ${Object.keys(S.ITEMS || {}).length}`);
 assert(S.BOATS && Object.keys(S.BOATS).length === 4, `S.BOATS phai co du 4 loai thuyen, hien tai: ${Object.keys(S.BOATS || {}).length}`);

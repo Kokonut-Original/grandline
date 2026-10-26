@@ -29,10 +29,10 @@ const OP = globalThis.OP;
 function run() {
   console.log('- Dang chay: Sprites & Data Integrity Verification Test...');
 
-  // 1. Kiem tra du 29 trai ac quy
+  // 1. Kiem tra du 16 trai ac quy
   const fruits = S.FRUITS || {};
   const fruitKeys = Object.keys(fruits);
-  assert.strictEqual(fruitKeys.length, 29, 'Phai co du 29 trai ac quy trong data');
+  assert.strictEqual(fruitKeys.length, 16, 'Phai co du 16 trai ac quy trong data');
 
   for (const fId of fruitKeys) {
     const spr = OP.SPR.get(`fruit_${fId}`);

@@ -55,7 +55,6 @@
     ROKU: 'roku',
     LAND: 'land',
     AIRDROP: 'airdrop',
-    BUSTER: 'buster',
     SHELL: 'shell',
     YONKO: 'yonko',
     REVEAL: 'reveal',

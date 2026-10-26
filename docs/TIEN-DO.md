@@ -9,8 +9,10 @@
 - Vào trận bằng bắn đại bác từ chiến hạm (không nhảy dù).
 - Ăn trái có hộp xác nhận. Đã ăn rồi thì chỉ hiện thông báo, không ăn thêm được.
 - Cao su nhận ×1.3 sát thương chém.
-- Đủ 29 trái. Trận khoảng 22 phút, bo 7 pha, bo cuối 70% đảo / 30% biển.
-- Có: Thức tỉnh, Buster Call, Tứ Hoàng, khán giả + biểu cảm, bục vinh danh Vua Hải Tặc + lệnh truy nã.
+- 16 trái (chia nguồn rơi theo bậc, xem CONTEXT mục 5). Trận khoảng 22 phút, bo 7 pha, bo cuối 70% đảo / 30% biển.
+- Có: Thức tỉnh (buff chung, không chiêu riêng), Tứ Hoàng, khán giả + biểu cảm, bục vinh danh Vua Hải Tặc + lệnh truy nã. KHÔNG có Buster Call.
+- Khoảng 10 người chơi + 22 bot = 32. Bot 2 mức normal/hard (mặc định 60% hard), hạ bot được truy nã như người thật.
+- View 480×270 cố định, phóng to theo số nguyên (có viền nếu tỉ lệ màn hình khác). Không chạy nhanh bằng Shift.
 - Không làm phần bảo mật chuyên sâu.
 
 ## Bug tồn đọng
@@ -21,11 +23,13 @@
 | B02 | M03B-T01c | Lệnh `tp` chạy được khi không `--dev`, `/tp __proto__` làm tọa độ NaN | Đã sửa M03B-T01e |
 | B03 | M00-T01 | Đọc được file ngoài `client/`, `shared/` (kể cả `.git`) | Đã sửa M03B-T01e |
 | B04 | M03-T01 | Seed 2: pháo đài bị tường bao kín, không có lối ra | Mở, sửa ở M03B-T01f |
-| B05 | M01-T01 | `botMix` không đặt được giá trị 0 | Mở |
+| B05 | M01-T01 | `botMix` không đặt được giá trị 0 | Đã sửa (thu gọn phạm vi) |
 
 ---
 
 ## KẾ HOẠCH
+
+**Model gợi ý** ghi sau tên task: `[Opus]` phần khung khó, sai sẽ kéo theo nhiều thứ; `[Sonnet]` việc rõ ràng theo mẫu; `[Flash]` việc nhỏ lặp lại (thử được, nhưng nên để Opus/Sonnet review cuối milestone).
 
 **Quy ước mỗi task:**
 - **Mục tiêu:** làm gì.
@@ -100,94 +104,89 @@
 - [x] **T01e Di chuyển chuẩn**
   - Mục tiêu: bỏ chạy nhanh (Shift về Lục Thức ô 1), `shared/22-move.js` dùng chung server/client, server xếp hàng input theo seq, nội suy hiển thị, camera theo dt, sửa reconnect nhân đôi, khóa `tp` sau `--dev`.
   - Xong khi: run_all PASS; test input dồn gói vẫn đi đúng quãng đường; đi vào cây/nước không bị kéo ngược.
-- [ ] **T01f Chiều sâu đảo và nước**
+- [ ] **T01f Chiều sâu đảo và nước** [Opus]
   - Mục tiêu: vách bờ + bóng đổ, nước gradient + gợn động + bọt bờ, bãi cát, bờ theo nhiễu, texture riêng từng biome.
-- [ ] **T01g Sắp theo y + ánh sáng**
+- [ ] **T01g Sắp theo y + ánh sáng** [Sonnet]
   - Mục tiêu: một danh sách vẽ sắp theo y, lớp ánh sáng theo ART-REF (ambient theo vùng).
-- [ ] **T02 Nhà top-down**
+- [ ] **T02 Nhà top-down** [Sonnet]
   - Mục tiêu: Nhà 2D top-down surviv.io, mái che + skylight, thềm gạch, thùng crate, barrel, hiệu ứng biến mất mái khi vào trong.
   - Xong khi: đứng ngoài thấy mái, bước vào trong mái mờ dần thấy nội thất.
-- [ ] **T03 Nhân vật & Ánh sáng**
+- [ ] **T03 Nhân vật & Ánh sáng** [Sonnet]
   - Mục tiêu: Sprite nhân vật 4 tông, animation nhún, lightmap quầng sáng đuốc/đèn lồng.
   - Xong khi: nhân vật có chiều sâu và ánh sáng ban đêm/hầm ngục đẹp mắt.
 
 ### M04 – Chiến đấu cơ bản
 
-- [ ] **T01 Pipeline sát thương**
+- [ ] **T01 Pipeline sát thương** [Opus]
   - Mục tiêu: máu, thể lực, giáp, khiên, applyDamage đúng 14 bước.
   - Xong khi: damage.test.js phủ mọi bước.
-- [ ] **T02 Cận chiến**
+- [ ] **T02 Cận chiến** [Sonnet]
   - Mục tiêu: vũ khí cận chiến, đòn mạnh, đỡ đòn, animation, số sát thương.
-- [ ] **T03 Súng**
+- [ ] **T03 Súng** [Sonnet]
   - Mục tiêu: súng, đạn bay, nạp đạn, Ná Kabuto, đạn Hải Lâu Thạch.
-- [ ] **T04 Chết**
+- [ ] **T04 Chết** [Sonnet]
   - Mục tiêu: chết, hòm xác, kill feed, truy nã.
 
 ### M05 – Loot & túi đồ
 
-- [ ] **T01 Loot**
+- [ ] **T01 Loot** [Sonnet]
   - Mục tiêu: item trên mặt đất, nhặt bằng F, màu bậc, bảng drop, rương.
-- [ ] **T02 Túi đồ**
+- [ ] **T02 Túi đồ** [Sonnet]
   - Mục tiêu: túi đồ DOM, kéo thả, vứt, đổi ô, tooltip.
-- [ ] **T03 Đồ dùng**
+- [ ] **T03 Đồ dùng** [Sonnet]
   - Mục tiêu: tiêu hao, giáp, 4 loại Dial, Tam kiếm.
-- [ ] **T04 Ăn trái**
+- [ ] **T04 Ăn trái** [Sonnet]
   - Mục tiêu: hộp xác nhận ăn trái, chặn trái thứ 2 (thông báo), mỗi trái 1 quả, trái tái sinh.
 
 ### M06 – Trái ác quỷ
 
-- [ ] **T01 Khung trái**
+- [ ] **T01 Khung trái** [Opus]
   - Mục tiêu: Q/E/R, hồi chiêu, nạp R, vô hình Logia, khóa trái, nước vô hiệu trái, Zoan biến hình, fruits/index.js, lệnh `/fruit`, hiệu ứng client cơ bản.
-- [ ] **T02 MVP 1:** mera, hie, goro, gomu, bara
-- [ ] **T03 MVP 2:** ope, nikyu, neko_leopard, tori_phoenix, yami
-- [ ] **T04 Logia còn lại:** magu, pika, suna, moku, gasu, yuki
-- [ ] **T05 Paramecia 1:** gura, hana, bomu, supa, doru
-- [ ] **T06 Paramecia 2:** ito, bari, mochi, horo
-- [ ] **T07 Zoan còn lại:** ryu_allosaurus, hito_reindeer, uo_seiryu, tori_falcon
+- [ ] **T02 Nhóm 1** [Sonnet]: mera, hie, goro, gomu, bara
+- [ ] **T03 Nhóm 2** [Sonnet]: ope, neko_leopard, tori_phoenix, yami, magu
+- [ ] **T04 Nhóm 3** [Sonnet]: pika, suna, gura, bomu, bari, hito_reindeer
 
 Mỗi task trái phải có: data đầy đủ, server logic, hiệu ứng client, test kháng/yếu trong fruits_*.test.js, và test tay bằng `/fruit`.
 
 ### M07 – Haki & Lục Thức
 
-- [ ] **T01** Thanh Haki, Vũ Trang 3 cấp, Quan Sát 3 cấp
-- [ ] **T02** Bá Vương 2 cấp
-- [ ] **T03** 6 Lục Thức + bí kíp, đủ 3 ô cho người không ăn trái
+- [ ] **T01** [Sonnet] Thanh Haki, Vũ Trang 3 cấp, Quan Sát 3 cấp
+- [ ] **T02** [Sonnet] Bá Vương 2 cấp
+- [ ] **T03** [Sonnet] 6 Lục Thức + bí kíp, đủ 3 ô cho người không ăn trái
 
 ### M08 – Biển & thuyền
 
-- [ ] **T01** 4 loại thuyền: lên/xuống, lái, nhiên liệu, máu, chìm
-- [ ] **T02** Pháo tàu chiến, 3 Hải Vương đi tuần
+- [ ] **T01** [Sonnet] 4 loại thuyền: lên/xuống, lái, nhiên liệu, máu, chìm
+- [ ] **T02** [Sonnet] Pháo tàu chiến, 3 Hải Vương đi tuần
 
 ### M09 – Boss
 
-- [ ] **T01** Khung boss + vice_admiral, giant_croc, snow_rabbit
-- [ ] **T02** trex, cp_agent, dragon, zombie_general, pacifista, samurai, giant_warrior
+- [ ] **T01** [Opus] Khung boss + vice_admiral, giant_croc, snow_rabbit
+- [ ] **T02** [Sonnet] trex, cp_agent, dragon, zombie_general, pacifista, samurai, giant_warrior
 
-### M10 – Bot
+### M10 – Bot (normal + hard)
 
-- [ ] **T01** Não bot + dò đường + lấp đủ 32 + 3 mức khó
-- [ ] **T02** Bot dùng trái, Haki, Lục Thức, thuyền, chạy bo, nhặt đồ tốt hơn
+- [ ] **T01** [Opus] Não bot kiểu utility AI (chấm điểm hành động) + dò đường A* + rải 22 bot ngẫu nhiên trên các đảo + 2 mức normal/hard (phản xạ, sai số ngắm, né)
+- [ ] **T02** [Sonnet] Bot dùng trái (theo khắc chế), Haki, Lục Thức, thuyền, chạy bo, nhặt đồ tốt hơn, ngắm đón đầu
 
 ### M11 – Luồng trận
 
-- [ ] **T01** Chiến hạm + bắn đại bác (chọn điểm, thanh lực, vùng hoàn hảo, bay vòng cung, lăn khi đáp, tự bắn khi hết giờ)
-- [ ] **T02** Bo 7 pha + chốt biển + bè/xuồng
-- [ ] **T03** Thính
-- [ ] **T04** Buster Call + Tứ Hoàng
-- [ ] **T05** Thức tỉnh: Logia (10)
-- [ ] **T06** Thức tỉnh: Paramecia (13)
-- [ ] **T07** Thức tỉnh: Zoan (6) + vật phẩm awaken_core
+- [ ] **T01** [Sonnet] Chiến hạm + bắn đại bác (chọn điểm, thanh lực, vùng hoàn hảo, bay vòng cung, lăn khi đáp, tự bắn khi hết giờ)
+- [ ] **T02** [Sonnet] Bo 7 pha + chốt biển + bè/xuồng
+- [ ] **T03** [Sonnet] Thính
+- [ ] **T04** [Sonnet] Tứ Hoàng
+- [ ] **T05** [Sonnet] Thức tỉnh (buff chung: R ×1.5, hồi R ×0.7, hào quang) + vật phẩm awaken_core
 
 ### M12 – Kết trận
 
-- [ ] **T01** Chế độ khán giả + biểu cảm
-- [ ] **T02** Bục vinh danh Vua Hải Tặc + lệnh truy nã pixel + bảng thống kê + Trận mới
+- [ ] **T01** [Sonnet] Chế độ khán giả + biểu cảm
+- [ ] **T02** [Sonnet] Bục vinh danh Vua Hải Tặc + lệnh truy nã pixel + bảng thống kê + Trận mới
 
 ### M13 – Âm thanh & hoàn thiện
 
-- [ ] **T01** Âm thanh Web Audio cho mọi chiêu và đòn đánh, nhỏ dần theo khoảng cách
-- [ ] **T02** Stress test 32 người, tối ưu (tick trung bình < 15ms), sửa lag mạng
-- [ ] **T03** Cân bằng sau khi chơi thử, double check toàn bộ, viết README hướng dẫn host và luật chơi
+- [ ] **T01** [Flash] Âm thanh Web Audio cho mọi chiêu và đòn đánh, nhỏ dần theo khoảng cách
+- [ ] **T02** [Opus] Stress test 32 người, tối ưu (tick trung bình < 15ms), sửa lag mạng
+- [ ] **T03** [Opus] Cân bằng sau khi chơi thử, double check toàn bộ, viết README hướng dẫn host và luật chơi
 
 ---
 
