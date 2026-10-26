@@ -1,6 +1,6 @@
 // server/world.js
 // Quan ly ban do server sinh tu shared/21-mapgen.js: tra cuu tile, va cham, trang thai nuoc va diem spawn.
-// Phu thuoc: shared/00 -> 05, shared/14-data-islands.js, shared/21-mapgen.js, shared/22-move.js.
+// Phu thuoc: shared/00 -> 05, shared/14-data-islands.js, shared/20-mapgen-layout.js, shared/21-mapgen.js, shared/22-move.js.
 
 'use strict';
 
@@ -9,6 +9,7 @@ require('../shared/01-constants');
 require('../shared/02-enums');
 require('../shared/05-rng');
 require('../shared/14-data-islands');
+require('../shared/20-mapgen-layout');
 require('../shared/21-mapgen');
 require('../shared/22-move');
 

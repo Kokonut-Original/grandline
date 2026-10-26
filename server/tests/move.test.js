@@ -56,7 +56,7 @@ function testDeterministicBursts() {
   const player = match.players.get(1);
 
   // Dat gan bo bien dao Rung (co, nuoc nong, nuoc sau, cay) de di qua nhieu loai dia hinh
-  const isl = S.ISLANDS.jungle;
+  const isl = match.world.getIslands().jungle;
   const start = match.world.freeSpot((isl.cx + 20) * C.TILE, (isl.cy - 10) * C.TILE);
   match.teleportPlayer(player, start.x, start.y);
 

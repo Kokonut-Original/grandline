@@ -23,6 +23,7 @@ const sharedFiles = [
   '15-data-boats.js',
   '16-data-zone.js',
   '20-rules-damage.js',
+  '20-mapgen-layout.js',
   '21-mapgen.js'
 ];
 

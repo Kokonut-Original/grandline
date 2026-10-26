@@ -273,12 +273,20 @@ scroll_soru:    { id, name, kind: 'SCROLL', tier: 'B', roku: 'soru',
 { id, name, hp, speed, radius, attacks: [ { id, telegraph, dmg, dmgType, range, cd } ],
   drops: [ { pool: 'A', chance: 1 }, ... ], island }
 
-// S.ISLANDS (14) — đúng theo code từ M03B-T01c
-{ id, name, cx, cy,                 // tâm đảo (tile)
-  radius,                           // bán kính (tile), cho phép số lẻ .5
+// S.ISLANDS (14) — dữ liệu tĩnh, KHÔNG có vị trí (từ M03B-T01f)
+{ id, name,
+  radius,                           // bán kính danh nghĩa (tile), cho phép số lẻ .5
   baseTile, subTile,                // TILE nền và TILE phụ (biome)
   boss, desc,
   props: { trees, houses, chests } }
+// Vị trí do mapgen tính theo seed. Mọi code cần vị trí đảo đọc map.islands (server: world.getIslands()):
+// map.islands[id] = { ...S.ISLANDS[id], cx, cy,   // tâm (tile); fortress luôn ở (160, 160)
+//                     ux, uy,                     // vector đơn vị trục lớn của elip
+//                     k,                          // độ kéo dài: trục lớn radius*k, trục nhỏ radius/k
+//                     warp }                      // độ lệch tọa độ (tile) tạo vịnh/mũi đất
+// map.islets = [ { id: 'islet', radius 3..6, rock, cx, cy, ux, uy, k, warp } ]  // 8–15 đảo nhỏ, không boss/rương
+// map.owner = Uint8Array(320*320): 0 nước, 1..10 đất đảo lớn (theo thứ tự S.ISLANDS), >= 11 đảo nhỏ
+// Bờ thật giữa 2 đảo lớn >= 8 tile, đảo nhỏ với đảo khác >= 4 tile, đất cách mép map >= 20 tile.
 // Bến thuyền (1–2 mỗi đảo) do mapgen sinh, nằm trong map.docks, không khai báo trong S.ISLANDS.
 
 // S.BOATS (15)
@@ -627,4 +635,5 @@ Mỗi 10 giây ghi một dòng `perf`: thời gian tick trung bình và lớn nh
 | 2026-10-26 | M03B-T01c | Đổi giá trị radius/center trong S.ISLANDS và tham số mapgen (schema thật dùng cx/cy, ghi lại ở M03B-T01e) |
 | 2026-10-26 | (ngoài kế hoạch) | Commit "tầm nhìn 1.5x" đã thêm `BTN.SPRINT`, `KEYS.SPRINT` và đổi `KEYS.ROKU1` sang KeyZ mà không ghi ở đây |
 | 2026-10-26 | Thu gọn phạm vi | Còn 16 trái (bỏ moku, gasu, yuki, hana, supa, doru, ito, nikyu, mochi, horo, ryu_allosaurus, uo_seiryu, tori_falcon). Thêm `S.FRUIT_SOURCES`. Bỏ Buster Call (CONST BUSTER_*, EV.BUSTER, `/buster`). `BOT_LEVEL` còn normal, hard. Thức tỉnh là buff chung, bỏ `castRAwaken`. Bot mặc định 60% hard / 40% normal |
+| 2026-10-26 | M03B-T01f | Bỏ `cx`, `cy` khỏi S.ISLANDS; vị trí + hình dạng đảo nằm trong `map.islands` (mapgen theo seed). Thêm `map.islets`, `map.owner` (mục 5). Thêm `S.MAPLAYOUT` (shared/20-mapgen-layout.js, nội bộ mapgen) |
 | 2026-10-26 | M03B-T01e | Bỏ `BTN.SPRINT`, `KEYS.SPRINT`; `KEYS.ROKU1` về lại ShiftLeft. Thêm CONST: INPUT_QUEUE_MAX, INPUT_BURST, MSG_MAX_BYTES, MSG_MAX_PER_SEC, CHAT_MAX_PER_SEC, SINK_MULT, SWIM_EXHAUST_DPS, SHALLOW_STAMINA_REGEN, QUICKSAND_MULT, ICE_KEEP, ICE_ACCEL. Thêm `S.MOVE` (shared/22-move.js). Sửa schema S.ISLANDS theo code. `snap.me` thêm water, fruitId, onBoatId, bỏ sprint. Server gửi `phase` ngay sau `welcome`. Lệnh dev qua `act`/chat, chỉ khi `--dev`. Player server dùng `fruitId`, `onBoatId`, `water` đúng mục 6 |

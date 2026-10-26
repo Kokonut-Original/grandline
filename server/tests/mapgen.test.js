@@ -1,6 +1,6 @@
 // server/tests/mapgen.test.js
 // Unit test cho thuat toan sinh ban do mapgen 10 dao, tinh dong nhat cua seed hash va module world.js.
-// Phu thuoc: server/tests/assert.js, shared/21-mapgen.js, shared/14-data-islands.js, server/world.js.
+// Phu thuoc: server/tests/assert.js, shared/20-mapgen-layout.js, shared/21-mapgen.js, shared/14-data-islands.js, server/world.js.
 
 'use strict';
 
@@ -12,10 +12,67 @@ require('../../shared/01-constants');
 require('../../shared/02-enums');
 require('../../shared/05-rng');
 require('../../shared/14-data-islands');
+require('../../shared/20-mapgen-layout');
 require('../../shared/21-mapgen');
 
 const S = globalThis.OP_SHARED;
 const World = require('../world');
+
+const W = 320;
+const T = S.TILE;
+
+// Rang buoc bo tri tren 1 ban do: 10 dao, 8-15 dao nho, dat cach mep >= 20,
+// bo that giua 2 dao lon >= 8, dao nho voi dao khac >= 4, moi diem spawn ra duoc bien sau
+function checkLayout(map, sd) {
+  assert.strictEqual(Object.keys(map.islands).length, 10, `Seed ${sd}: phai co 10 dao trong map.islands`);
+  assert.ok(map.islets.length >= 8 && map.islets.length <= 15, `Seed ${sd}: so dao nho phai 8-15, thuc te ${map.islets.length}`);
+
+  const o = map.owner;
+  let minBig = 1e9;
+  let minIslet = 1e9;
+  for (let y = 0; y < W; y++) {
+    for (let x = 0; x < W; x++) {
+      const b = o[y * W + x];
+      if (!b) continue;
+      assert.ok(x >= 20 && x <= 299 && y >= 20 && y <= 299, `Seed ${sd}: dat (${x}, ${y}) qua sat mep map`);
+      for (let yy = Math.max(0, y - 8); yy <= Math.min(W - 1, y + 8); yy++) {
+        for (let xx = Math.max(0, x - 8); xx <= Math.min(W - 1, x + 8); xx++) {
+          const a = o[yy * W + xx];
+          if (!a || a === b) continue;
+          const d = Math.hypot(xx - x, yy - y);
+          if (a <= 10 && b <= 10) minBig = Math.min(minBig, d);
+          else minIslet = Math.min(minIslet, d);
+        }
+      }
+    }
+  }
+  assert.ok(minBig >= 8, `Seed ${sd}: bo that giua 2 dao lon phai >= 8 tile, thuc te ${minBig}`);
+  assert.ok(minIslet >= 4, `Seed ${sd}: dao nho cach dao khac phai >= 4 tile, thuc te ${minIslet}`);
+
+  // BFS 4 huong qua o khong chan tu diem spawn, phai cham nuoc sau (dao khong bi kin)
+  map.spawns.forEach(sp => {
+    const seen = new Uint8Array(W * W);
+    const queue = [sp.ty * W + sp.tx];
+    seen[queue[0]] = 1;
+    let out = false;
+    for (let h = 0; h < queue.length && !out; h++) {
+      const i = queue[h];
+      if (map.tiles[i] === T.DEEP) { out = true; break; }
+      const x = i % W;
+      const y = (i - x) / W;
+      [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(dv => {
+        const nx = x + dv[0];
+        const ny = y + dv[1];
+        if (nx < 0 || ny < 0 || nx >= W || ny >= W) return;
+        const j = ny * W + nx;
+        if (seen[j] || S.TILE_BLOCKING.indexOf(map.tiles[j]) !== -1) return;
+        seen[j] = 1;
+        queue.push(j);
+      });
+    }
+    assert.ok(out, `Seed ${sd}: dao ${sp.islandId} bi kin, khong ra duoc bien sau`);
+  });
+}
 
 function run() {
   console.log('- Dang chay: Mapgen 10 Islands & Seed Hash Integrity Test...');
@@ -42,11 +99,11 @@ function run() {
   const islandKeys = Object.keys(islands);
   assert.strictEqual(islandKeys.length, 10, 'Phai co du 10 hon dao');
 
-  // Dao trung tam phai o tam (160, 160) va co ban kinh 32 tile
+  // Dao trung tam ban kinh 32 tile; vi tri do mapgen dat o tam (160, 160)
   assert.ok(islands.fortress, 'Phai co dao trung tam fortress');
-  assert.strictEqual(islands.fortress.cx, 160, 'Dao trung tam cx phai la 160');
-  assert.strictEqual(islands.fortress.cy, 160, 'Dao trung tam cy phai la 160');
   assert.strictEqual(islands.fortress.radius, 32, 'Fortress radius phai la 32 tile');
+  assert.strictEqual(mapA.islands.fortress.cx, 160, 'Dao trung tam cx phai la 160');
+  assert.strictEqual(mapA.islands.fortress.cy, 160, 'Dao trung tam cy phai la 160');
 
   // 9 dao ve tinh phai co ban kinh trong khoang [24, 30] va khong trung lap
   const satKeys = islandKeys.filter(k => k !== 'fortress');
@@ -58,34 +115,8 @@ function run() {
     satRadii.add(r);
   });
 
-  // Rang buoc b: Mọi dao nam tron trong map, cach mep map >= 20 tile
-  islandKeys.forEach(k => {
-    const isl = islands[k];
-    const minX = isl.cx - isl.radius;
-    const maxX = isl.cx + isl.radius;
-    const minY = isl.cy - isl.radius;
-    const maxY = isl.cy + isl.radius;
-    assert.ok(minX >= 20, `Dao ${k} vi pham mep trai: minX=${minX}`);
-    assert.ok(319 - maxX >= 20, `Dao ${k} vi pham mep phai: maxX=${maxX}`);
-    assert.ok(minY >= 20, `Dao ${k} vi pham mep tren: minY=${minY}`);
-    assert.ok(319 - maxY >= 20, `Dao ${k} vi pham mep duoi: maxY=${maxY}`);
-  });
-
-  // Rang buoc c: Fortress khong cham dao nao khac, cach bo dao gan nhat >= 8 tile
-  satKeys.forEach(k => {
-    const isl = islands[k];
-    const gapToFortress = Math.hypot(isl.cx - 160, isl.cy - 160) - (isl.radius + islands.fortress.radius);
-    assert.ok(gapToFortress >= 8, `Fortress gap voi dao ${k} phai >= 8 tile, thuc te: ${gapToFortress}`);
-  });
-
-  // Rang buoc a: Khoang cach giua bo hai dao ke nhau >= 8 tile
-  for (let i = 0; i < satKeys.length; i++) {
-    const j = (i + 1) % satKeys.length;
-    const isl1 = islands[satKeys[i]];
-    const isl2 = islands[satKeys[j]];
-    const gap = Math.hypot(isl1.cx - isl2.cx, isl1.cy - isl2.cy) - (isl1.radius + isl2.radius);
-    assert.ok(gap >= 8, `Khoang cach bo giua ${satKeys[i]} va ${satKeys[j]} phai >= 8 tile, thuc te: ${gap}`);
-  }
+  // Bo tri theo seed (M03B-T01f): kiem tra tren dat that cua nhieu seed
+  for (let sd = 1; sd <= 20; sd++) checkLayout(S.MAPGEN.generate(sd), sd);
 
   // Rang buoc d: Moi dao co 1-2 ben thuyen (docks)
   assert.ok(mapA.docks && mapA.docks.length >= 10, 'Phai co it nhat 10 ben thuyen');

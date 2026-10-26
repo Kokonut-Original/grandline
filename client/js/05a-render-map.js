@@ -1,6 +1,9 @@
 // client/js/05a-render-map.js
-// Render ban do theo chunk 16x16 tile (256x256 px), co tu nhien bo vien luoi, chi tiet 15-20%, bo bien chuyen tiep mem.
-// Phu thuoc: client/js/00-boot.js, client/js/04-camera.js, client/js/02b-palette.js, shared/01-constants.js, shared/02-enums.js.
+// Render ban do theo chunk 16x16 tile (256x256 px). Nen tile nuong san bang OP.SPR.paintTile (02g) vao chunk,
+// ban do do sau nuoc tinh 1 lan khi initMap. Lop dong ve moi khung cho o trong khung nhin:
+// gon sang tren nuoc, bot trang nhap nhay doc mep bo, dung nham sang theo nhip.
+// Phu thuoc: client/js/00-boot.js, client/js/04-camera.js, client/js/02b-palette.js, client/js/02g-tiles-paint.js,
+//            shared/01-constants.js, shared/02-enums.js.
 
 (function (root) {
   'use strict';
@@ -15,32 +18,15 @@
   const MAP_TILES = S.CONST.MAP_TILES || 320;
   const CHUNKS_COUNT = MAP_TILES / CHUNK_TILES; // 20 chunks moi chieu
 
-  // Bang mau fallback theo chuan do sang moi (DEEP < SHALLOW < GRASS < SAND)
-  const TILE_COLORS = {
-    0: '#163e77',  // DEEP (Lum: 57.61)
-    1: '#287ea6',  // SHALLOW (Lum: 110.60)
-    2: '#e2c275',  // SAND (Lum: 195.24)
-    3: '#4f8f3c',  // GRASS (Lum: 123.40)
-    4: '#825127',  // DIRT
-    5: '#6b7a90',  // STONE
-    6: '#424d5d',  // WALL
-    7: '#733f1b',  // WOOD
-    8: '#96d0ea',  // ICE
-    9: '#b32b13',  // LAVA
-    10: '#d2e7f5', // SNOW
-    11: '#b38b34', // QUICKSAND
-    12: '#663516', // DOCK
-    13: '#80461c', // BRIDGE
-    14: '#298230', // TREE
-    15: '#523727', // HOUSE_WALL
-    16: '#545468'  // FLOOR
-  };
+  // Dai do sau: nuoc nong 0..2 theo khoang cach toi dat, nuoc sau 3..5 theo khoang cach toi nuoc nong
+  const SHALLOW_BANDS = 3;
+  const DEEP_BANDS = 3;
 
-  const TILE_NAMES = {
-    0: 'deep', 1: 'shallow', 2: 'sand', 3: 'grass',
-    4: 'dirt', 5: 'stone', 6: 'wall', 7: 'wood',
-    8: 'ice', 9: 'lava', 10: 'snow', 11: 'quicksand',
-    12: 'dock', 13: 'bridge', 14: 'tree', 15: 'house_wall', 16: 'floor'
+  // Mau du phong khi chua co 02g (vd chay test tren Node)
+  const TILE_COLORS = {
+    0: '#163e77', 1: '#287ea6', 2: '#e2c275', 3: '#4f8f3c', 4: '#825127', 5: '#6b7a90',
+    6: '#424d5d', 7: '#733f1b', 8: '#96d0ea', 9: '#b32b13', 10: '#d2e7f5', 11: '#b38b34',
+    12: '#663516', 13: '#80461c', 14: '#298230', 15: '#523727', 16: '#545468'
   };
 
   // Ham bam xac dinh 2 chieu tu ART-REF muc 11 (chi dung o client)
@@ -51,47 +37,56 @@
   }
 
   let currentMap = null;
+  let depthMap = null;
   const chunkCache = new Map();
 
-  function getTileSafe(tiles, tx, ty) {
-    if (!tiles || tx < 0 || tx >= MAP_TILES || ty < 0 || ty >= MAP_TILES) return 0;
+  function tileAt(tiles, tx, ty) {
+    if (!tiles || tx < 0 || tx >= MAP_TILES || ty < 0 || ty >= MAP_TILES) return T.DEEP;
     return tiles[ty * MAP_TILES + tx];
   }
 
-  // Ve chi tiet nho tren bai co (khom co, hoa li ti, chi ~15-20% o co)
-  function drawGrassDetails(ctx, px, py, r) {
-    const detailType = Math.floor((r / 0.18) * 4);
-    const ox = px + 4 + Math.floor((r * 1000) % 7);
-    const oy = py + 4 + Math.floor((r * 777) % 7);
+  function isWater(t) {
+    return t === T.DEEP || t === T.SHALLOW;
+  }
 
-    if (detailType === 0) {
-      // Kieu 0: Khom 2 cong co nghieng
-      ctx.fillStyle = '#68a94a';
-      ctx.fillRect(ox, oy, 1, 2);
-      ctx.fillRect(ox + 1, oy - 1, 1, 2);
-      ctx.fillStyle = '#437a33';
-      ctx.fillRect(ox, oy + 2, 2, 1);
-    } else if (detailType === 1) {
-      // Kieu 1: Bong hoa trang li ti
-      ctx.fillStyle = '#f8fafc';
-      ctx.fillRect(ox, oy, 2, 2);
-      ctx.fillStyle = '#fef08a';
-      ctx.fillRect(ox, oy + 1, 1, 1);
-    } else if (detailType === 2) {
-      // Kieu 2: Cum 3 cong co tu nhien
-      ctx.fillStyle = '#68a94a';
-      ctx.fillRect(ox, oy + 1, 1, 2);
-      ctx.fillRect(ox + 2, oy, 1, 3);
-      ctx.fillRect(ox + 3, oy + 1, 1, 2);
-      ctx.fillStyle = '#437a33';
-      ctx.fillRect(ox, oy + 3, 4, 1);
-    } else {
-      // Kieu 3: Dom hoa vang dai nho
-      ctx.fillStyle = '#fef08a';
-      ctx.fillRect(ox, oy, 2, 1);
-      ctx.fillStyle = '#437a33';
-      ctx.fillRect(ox + 1, oy + 1, 1, 1);
+  // BFS 4 huong tu moi o 'isSource', chi lan qua o 'canPass'; ghi khoang cach (toi da cap) vao out
+  function bfsDistance(tiles, isSource, canPass, cap, out, base) {
+    const n = MAP_TILES * MAP_TILES;
+    const dist = new Uint8Array(n).fill(255);
+    const queue = new Int32Array(n);
+    let head = 0;
+    let tail = 0;
+    for (let i = 0; i < n; i++) {
+      if (isSource(tiles[i])) {
+        dist[i] = 0;
+        queue[tail++] = i;
+      }
     }
+    while (head < tail) {
+      const i = queue[head++];
+      const d = dist[i];
+      if (d >= cap) continue;
+      const x = i % MAP_TILES;
+      const nb = [x > 0 ? i - 1 : -1, x < MAP_TILES - 1 ? i + 1 : -1, i - MAP_TILES, i + MAP_TILES];
+      for (let k = 0; k < 4; k++) {
+        const j = nb[k];
+        if (j < 0 || j >= n || dist[j] !== 255 || !canPass(tiles[j])) continue;
+        dist[j] = d + 1;
+        queue[tail++] = j;
+      }
+    }
+    for (let i = 0; i < n; i++) {
+      if (canPass(tiles[i])) out[i] = base + Math.min(cap, dist[i] === 255 ? cap : dist[i]) - 1;
+    }
+  }
+
+  // Ban do dai do sau 0..5 cho moi o nuoc (o dat = 0, khong dung)
+  function buildDepthMap(tiles) {
+    const out = new Uint8Array(MAP_TILES * MAP_TILES);
+    if (!tiles) return out;
+    bfsDistance(tiles, function (t) { return !isWater(t); }, function (t) { return t === T.SHALLOW; }, SHALLOW_BANDS, out, 0);
+    bfsDistance(tiles, function (t) { return t !== T.DEEP; }, function (t) { return t === T.DEEP; }, DEEP_BANDS, out, SHALLOW_BANDS);
+    return out;
   }
 
   function getChunkCanvas(cx, cy) {
@@ -115,157 +110,19 @@
     const startTx = cx * CHUNK_TILES;
     const startTy = cy * CHUNK_TILES;
     const tiles = currentMap ? currentMap.tiles : null;
+    const paint = (OP.SPR && OP.SPR.paintTile) || null;
 
     for (let lty = 0; lty < CHUNK_TILES; lty++) {
       for (let ltx = 0; ltx < CHUNK_TILES; ltx++) {
         const tx = startTx + ltx;
         const ty = startTy + lty;
-        const tIndex = ty * MAP_TILES + tx;
-        const tileType = (tiles && tIndex >= 0 && tIndex < tiles.length) ? tiles[tIndex] : 0;
-
         const px = ltx * TILE_PX;
         const py = lty * TILE_PX;
-
-        const r = hash2(tx, ty);
-
-        // 1. Ve nen tile (Neu la vat can TREE thi lay tile nen dia hinh lân can de khong bi vuong xanh)
-        let renderTile = tileType;
-        if (tileType === 14) {
-          if (tiles) {
-            const neighbors = [
-              getTileSafe(tiles, tx, ty - 1),
-              getTileSafe(tiles, tx, ty + 1),
-              getTileSafe(tiles, tx - 1, ty),
-              getTileSafe(tiles, tx + 1, ty)
-            ];
-            for (let ni = 0; ni < neighbors.length; ni++) {
-              const nt = neighbors[ni];
-              if (nt !== 0 && nt !== 1 && nt !== 14 && nt !== 15) {
-                renderTile = nt;
-                break;
-              }
-            }
-          }
-          if (renderTile === 14) renderTile = 3;
-        }
-
-        if (renderTile === 3) { // GRASS
-          // Nen co min mang hoan toan khong co duong luoi ca-ro tho
-          ctx.fillStyle = '#4f8f3c';
-          ctx.fillRect(px, py, TILE_PX, TILE_PX);
-
-          // Mep tren sang rat nhe rgba(255,255,255,.04)
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.04)';
-          ctx.fillRect(px, py, TILE_PX, 1);
-
-          // Mep duoi va phai toi rat nhe rgba(0,0,0,.06)
-          ctx.fillStyle = 'rgba(0, 0, 0, 0.06)';
-          ctx.fillRect(px, py + TILE_PX - 1, TILE_PX, 1);
-          ctx.fillRect(px + TILE_PX - 1, py, 1, TILE_PX);
-
-          // Chi ~15-20% o co co chi tiet (ngon co, hoa li ti), 82% con lai la co tron
-          if (r < 0.18) {
-            drawGrassDetails(ctx, px, py, r);
-          }
+        if (paint && currentMap) {
+          paint(ctx, currentMap, tx, ty, px, py, depthMap ? depthMap[ty * MAP_TILES + tx] : 0);
         } else {
-          // Cac tile khac (Nuoc, Cat, Da, Go, Tuong): dung sprite co bien the
-          const v = Math.floor(r * 3);
-          const spriteId = 'tile_' + (TILE_NAMES[renderTile] || renderTile);
-          const spr = (OP.SPR && OP.SPR.get) ? (OP.SPR.get(spriteId) || OP.SPR.get('tile_' + renderTile)) : null;
-
-          if (spr && spr.frames && spr.frames.length > 0) {
-            const frame = spr.frames[v % spr.frames.length] || spr.frames[0];
-            ctx.drawImage(frame, px, py, TILE_PX, TILE_PX);
-          } else {
-            ctx.fillStyle = TILE_COLORS[renderTile] || '#163e77';
-            ctx.fillRect(px, py, TILE_PX, TILE_PX);
-          }
-        }
-
-        // 2. Vien chuyen tiep bo bien (Coastal Transition Edge)
-        if (tiles) {
-          const up = getTileSafe(tiles, tx, ty - 1);
-          const down = getTileSafe(tiles, tx, ty + 1);
-          const left = getTileSafe(tiles, tx - 1, ty);
-          const right = getTileSafe(tiles, tx + 1, ty);
-
-          // Cát giáp biển (Nước nông hoặc Biển sâu): bọt sóng trắng và cát ẩm mềm
-          if (tileType === 2) { // SAND
-            if (up === 0 || up === 1) {
-              ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
-              ctx.fillRect(px, py, TILE_PX, 1);
-              ctx.fillStyle = 'rgba(181, 146, 71, 0.5)';
-              ctx.fillRect(px, py + 1, TILE_PX, 1);
-            }
-            if (down === 0 || down === 1) {
-              ctx.fillStyle = 'rgba(181, 146, 71, 0.5)';
-              ctx.fillRect(px, py + TILE_PX - 2, TILE_PX, 1);
-              ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
-              ctx.fillRect(px, py + TILE_PX - 1, TILE_PX, 1);
-            }
-            if (left === 0 || left === 1) {
-              ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
-              ctx.fillRect(px, py, 1, TILE_PX);
-              ctx.fillStyle = 'rgba(181, 146, 71, 0.5)';
-              ctx.fillRect(px + 1, py, 1, TILE_PX);
-            }
-            if (right === 0 || right === 1) {
-              ctx.fillStyle = 'rgba(181, 146, 71, 0.5)';
-              ctx.fillRect(px + TILE_PX - 2, py, 1, TILE_PX);
-              ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
-              ctx.fillRect(px + TILE_PX - 1, py, 1, TILE_PX);
-            }
-          }
-          // Nước nông giáp biển sâu: gradient xanh sẫm làm mềm ranh giới
-          else if (tileType === 1) { // SHALLOW
-            if (up === 0) {
-              ctx.fillStyle = 'rgba(22, 62, 119, 0.45)';
-              ctx.fillRect(px, py, TILE_PX, 2);
-            }
-            if (down === 0) {
-              ctx.fillStyle = 'rgba(22, 62, 119, 0.45)';
-              ctx.fillRect(px, py + TILE_PX - 2, TILE_PX, 2);
-            }
-            if (left === 0) {
-              ctx.fillStyle = 'rgba(22, 62, 119, 0.45)';
-              ctx.fillRect(px, py, 2, TILE_PX);
-            }
-            if (right === 0) {
-              ctx.fillStyle = 'rgba(22, 62, 119, 0.45)';
-              ctx.fillRect(px + TILE_PX - 2, py, 2, TILE_PX);
-            }
-          }
-          // Cỏ giáp cát hoặc giáp nước
-          else if (tileType === 3) { // GRASS
-            if (up === 2) {
-              ctx.fillStyle = 'rgba(67, 122, 51, 0.35)';
-              ctx.fillRect(px, py, TILE_PX, 1);
-            } else if (up === 0 || up === 1) {
-              ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
-              ctx.fillRect(px, py, TILE_PX, 1);
-            }
-            if (down === 2) {
-              ctx.fillStyle = 'rgba(67, 122, 51, 0.35)';
-              ctx.fillRect(px, py + TILE_PX - 1, TILE_PX, 1);
-            } else if (down === 0 || down === 1) {
-              ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
-              ctx.fillRect(px, py + TILE_PX - 1, TILE_PX, 1);
-            }
-            if (left === 2) {
-              ctx.fillStyle = 'rgba(67, 122, 51, 0.35)';
-              ctx.fillRect(px, py, 1, TILE_PX);
-            } else if (left === 0 || left === 1) {
-              ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
-              ctx.fillRect(px, py, 1, TILE_PX);
-            }
-            if (right === 2) {
-              ctx.fillStyle = 'rgba(67, 122, 51, 0.35)';
-              ctx.fillRect(px + TILE_PX - 1, py, 1, TILE_PX);
-            } else if (right === 0 || right === 1) {
-              ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
-              ctx.fillRect(px + TILE_PX - 1, py, 1, TILE_PX);
-            }
-          }
+          ctx.fillStyle = TILE_COLORS[tileAt(tiles, tx, ty)] || '#163e77';
+          ctx.fillRect(px, py, TILE_PX, TILE_PX);
         }
       }
     }
@@ -274,11 +131,69 @@
     return canvas;
   }
 
+  // ---------- Lop dong (moi khung, chi o trong khung nhin) ----------
+
+  function drawWaterTile(ctx, tiles, tx, ty, px, py, r, t) {
+    // Gon sang: ~1/6 o nuoc co 1 vet sang len xuong theo sin(t + hash)
+    if (r < 0.16) {
+      const a = Math.sin(t * 1.6 + r * 60);
+      if (a > 0.2) {
+        ctx.fillStyle = `rgba(255,255,255,${(a - 0.2) * 0.4})`;
+        ctx.fillRect(px + 2 + Math.floor(r * 70) % 10, py + 3 + Math.floor(r * 130) % 10, 4, 1);
+      }
+    }
+
+    // Bot trang doc mep bo (canh nuoc giap dat), nhap nhay nhe
+    const foam = 0.28 + 0.18 * Math.sin(t * 2.2 + r * 25);
+    ctx.fillStyle = `rgba(255,255,255,${foam})`;
+    const up = tileAt(tiles, tx, ty - 1);
+    const down = tileAt(tiles, tx, ty + 1);
+    const left = tileAt(tiles, tx - 1, ty);
+    const right = tileAt(tiles, tx + 1, ty);
+    const off = Math.floor((Math.sin(t * 1.3 + r * 9) + 1) * 1.2); // bot lui toi theo song
+    if (!isWater(up) && up !== T.DOCK && up !== T.BRIDGE) ctx.fillRect(px, py + 3 + off, TILE_PX, 1);
+    if (!isWater(down) && down !== T.DOCK && down !== T.BRIDGE) ctx.fillRect(px, py + TILE_PX - 2 - off, TILE_PX, 1);
+    if (!isWater(left) && left !== T.DOCK && left !== T.BRIDGE) ctx.fillRect(px + 1 + off, py, 1, TILE_PX);
+    if (!isWater(right) && right !== T.DOCK && right !== T.BRIDGE) ctx.fillRect(px + TILE_PX - 2 - off, py, 1, TILE_PX);
+  }
+
+  function drawDynamic(ctx, left, top, right, bottom) {
+    const tiles = currentMap.tiles;
+    const t = ((typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now()) / 1000;
+    const tx0 = Math.max(0, Math.floor(left / TILE_PX));
+    const ty0 = Math.max(0, Math.floor(top / TILE_PX));
+    const tx1 = Math.min(MAP_TILES - 1, Math.floor(right / TILE_PX));
+    const ty1 = Math.min(MAP_TILES - 1, Math.floor(bottom / TILE_PX));
+
+    for (let ty = ty0; ty <= ty1; ty++) {
+      for (let tx = tx0; tx <= tx1; tx++) {
+        const tile = tiles[ty * MAP_TILES + tx];
+        const px = tx * TILE_PX;
+        const py = ty * TILE_PX;
+        const r = hash2(tx, ty);
+        if (isWater(tile)) {
+          drawWaterTile(ctx, tiles, tx, ty, px, py, r, t);
+        } else if (tile === T.LAVA) {
+          // Dung nham sang theo nhip, lech pha theo o
+          ctx.fillStyle = `rgba(255,190,70,${0.1 + 0.1 * Math.sin(t * 2 + r * 6)})`;
+          ctx.fillRect(px, py, TILE_PX, TILE_PX);
+        }
+      }
+    }
+  }
+
   const R = OP.R = OP.R || {};
 
   R.initMap = function (mapData) {
     currentMap = mapData;
+    depthMap = buildDepthMap(mapData ? mapData.tiles : null);
     chunkCache.clear();
+  };
+
+  // Dai do sau cua o nuoc (0..5), dung cho test va hieu ung
+  R.getDepth = function (tx, ty) {
+    if (!depthMap || tx < 0 || ty < 0 || tx >= MAP_TILES || ty >= MAP_TILES) return 0;
+    return depthMap[ty * MAP_TILES + tx];
   };
 
   R.renderMap = function (ctx) {
@@ -304,6 +219,8 @@
         }
       }
     }
+
+    drawDynamic(ctx, left, top, right, bottom);
   };
 
   R.clearMapCache = function () {

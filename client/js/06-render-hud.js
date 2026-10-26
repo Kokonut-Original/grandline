@@ -206,24 +206,29 @@
     ctx.fillRect(mapAreaX, mapAreaY, mapAreaSize, mapAreaSize);
 
     // Ve 10 dao
-    const islands = (S.ISLANDS) || (map.islands) || {};
+    // Vi tri dao do mapgen tinh theo seed (S.ISLANDS chi co du lieu tinh)
+    const islands = map.islands || {};
 
     for (const key in islands) {
       const isl = islands[key];
       const ix = mapAreaX + isl.cx * scale;
       const iy = mapAreaY + isl.cy * scale;
-      const ir = Math.max(3, isl.radius * scale);
+      const k = isl.k || 1;
+      const ra = Math.max(3, isl.radius * k * scale);
+      const rb = Math.max(3, isl.radius / k * scale);
+      const rot = Math.atan2(isl.uy || 0, isl.ux || 1);
+      const ir = Math.max(ra, rb);
 
       // Dai nuoc nong
       ctx.fillStyle = '#369ec9';
       ctx.beginPath();
-      ctx.arc(ix, iy, ir + 2, 0, Math.PI * 2);
+      ctx.ellipse(ix, iy, ra + 2, rb + 2, rot, 0, Math.PI * 2);
       ctx.fill();
 
       // Dat lien
       ctx.fillStyle = (isl.id === 'desert') ? '#e2c275' : (isl.id === 'winter' ? '#d2e7f5' : (isl.id === 'fortress' ? '#6b7a90' : '#4eb83a'));
       ctx.beginPath();
-      ctx.arc(ix, iy, ir, 0, Math.PI * 2);
+      ctx.ellipse(ix, iy, ra, rb, rot, 0, Math.PI * 2);
       ctx.fill();
 
       // Ten dao tieng Viet co dau

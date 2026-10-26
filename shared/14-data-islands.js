@@ -1,5 +1,6 @@
 // shared/14-data-islands.js
-// Du lieu dinh nghia 10 dao tren ban do (toa do tam, ban kinh, biome, boss va dac diem).
+// Du lieu tinh cua 10 dao (ten, ban kinh, biome, boss va dac diem).
+// Vi tri va hinh dang (cx, cy, ux, uy, k, warp) do shared/21-mapgen.js tinh theo seed, nam trong map.islands.
 // Phu thuoc: shared/00-namespace.js, shared/01-constants.js, shared/02-enums.js.
 
 (function (root) {
@@ -8,12 +9,7 @@
   const S = root.OP_SHARED = root.OP_SHARED || {};
   const T = S.TILE;
 
-  // Tam ban do 320x320 la (160, 160)
-  const CENTER_X = 160;
-  const CENTER_Y = 160;
-  const ORBIT_RADIUS = 110;
-
-  // 9 dao ve tinh xep vong quanh tam ban do voi ban kinh mo rong (24-30 tile)
+  // 9 dao con lai (ban kinh 24-30 tile), mapgen rai theo seed
   const SATELLITE_DEFS = [
     { id: 'desert', name: 'Đảo Sa Mạc', radius: 28, baseTile: T.SAND, subTile: T.QUICKSAND, boss: 'giant_croc', desc: 'Cát lún đi chậm, ít chỗ nấp' },
     { id: 'winter', name: 'Đảo Băng', radius: 25, baseTile: T.SNOW, subTile: T.ICE, boss: 'snow_rabbit', desc: 'Mặt băng trơn trượt có quán tính' },
@@ -27,12 +23,10 @@
   ];
 
   const ISLANDS = {
-    // 1. Dao trung tam o chinh giua
+    // 1. Dao trung tam (mapgen luon dat o tam ban do)
     fortress: {
       id: 'fortress',
       name: 'Pháo đài Trung Tâm',
-      cx: CENTER_X,
-      cy: CENTER_Y,
       radius: 32,
       baseTile: T.STONE,
       subTile: T.FLOOR,
@@ -42,19 +36,12 @@
     }
   };
 
-  // 2. Tinh toan toa do cho 9 dao ve tinh
-  const stepAngle = (Math.PI * 2) / 9;
+  // 2. 9 dao con lai
   for (let i = 0; i < SATELLITE_DEFS.length; i++) {
     const def = SATELLITE_DEFS[i];
-    const angle = i * stepAngle;
-    const cx = Math.round(CENTER_X + Math.cos(angle) * ORBIT_RADIUS);
-    const cy = Math.round(CENTER_Y + Math.sin(angle) * ORBIT_RADIUS);
-
     ISLANDS[def.id] = {
       id: def.id,
       name: def.name,
-      cx: cx,
-      cy: cy,
       radius: def.radius,
       baseTile: def.baseTile,
       subTile: def.subTile,

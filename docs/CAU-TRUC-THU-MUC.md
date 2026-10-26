@@ -32,6 +32,7 @@ onepiece-br/
 │   ├── 15-data-boats.js
 │   ├── 16-data-zone.js
 │   ├── 20-rules-damage.js    hàm tính hệ số thuần (không có side effect), dùng cho test + tooltip
+│   ├── 20-mapgen-layout.js   nhiễu, hình dạng và bố trí đảo theo seed (dùng bởi 21)
 │   ├── 21-mapgen.js          sinh map từ seed, cho kết quả giống hệt nhau ở cả 2 phía
 │   └── 22-move.js            S.MOVE: công thức di chuyển dùng chung server + client dự đoán
 │
@@ -84,6 +85,7 @@ onepiece-br/
 │       ├── 02d-sprites-items.js   vũ khí, trái, đồ, icon
 │       ├── 02e-sprites-world.js   tile, cây, nhà, rương, bến, thuyền, chiến hạm
 │       ├── 02f-sprites-fx.js      hạt, đòn đánh, vùng
+│       ├── 02g-tiles-paint.js     vẽ tile nền theo thủ tục (biome, nước nhiều dải, vách bờ)
 │       ├── 03-input.js
 │       ├── 04-camera.js
 │       ├── 05a-render-map.js      cache chunk 16×16 tile
@@ -132,7 +134,7 @@ onepiece-br/
 | Người chơi giật, kéo ngược | 22-move.js (phải giống hệt 2 phía), 09-predict.js, hàng đợi input trong match.js, `move.test.js`, dòng `perf` trong log |
 | Sát thương sai | combat.js (pipeline), 20-rules-damage.js, test damage |
 | Trái lỗi | server/fruits/<id>.js, 10-data-fruits.js, 05c-render-fx.js |
-| Map khác nhau giữa 2 máy | 21-mapgen.js, 05-rng.js (cấm dùng Math.random trong mapgen) |
+| Map khác nhau giữa 2 máy | 20-mapgen-layout.js, 21-mapgen.js, 05-rng.js (cấm dùng Math.random trong mapgen) |
 | Sprite sai | tools/sprite-viewer.html, 02a-pixel-core.js |
 | Bot đứng im | bots/brain.js, bots/nav.js, log tag `bot` |
 | Server lag | dòng `perf` trong log, stress_test.py |

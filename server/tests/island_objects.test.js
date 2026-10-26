@@ -1,6 +1,6 @@
 // server/tests/island_objects.test.js
 // Unit test kiem tra do vat tren 10 dao (cay, nha, ruong, boss, ben), he thong entities.js va loot.js.
-// Phu thuoc: server/tests/assert.js, shared/21-mapgen.js, server/entities.js, server/loot.js, server/world.js.
+// Phu thuoc: server/tests/assert.js, shared/20-mapgen-layout.js, shared/21-mapgen.js, server/entities.js, server/loot.js, server/world.js.
 
 'use strict';
 
@@ -12,6 +12,7 @@ require('../../shared/02-enums');
 require('../../shared/05-rng');
 require('../../shared/12-data-items');
 require('../../shared/14-data-islands');
+require('../../shared/20-mapgen-layout');
 require('../../shared/21-mapgen');
 
 const S = globalThis.OP_SHARED;

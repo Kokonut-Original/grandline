@@ -1,6 +1,11 @@
 // shared/21-mapgen.js
-// Sinh ban do 320x320 tile tu seed gom 10 dao, cay coi, nha cua, ruong bau, boss spawn va ben thuyen.
-// Phu thuoc: shared/00-namespace.js, shared/01-constants.js, shared/02-enums.js, shared/05-rng.js, shared/14-data-islands.js.
+// Sinh ban do 320x320 tile tu seed: bo tri 10 dao theo seed (phao dai o tam, 9 dao rai khap map,
+// hinh elip xoay co vinh/mui dat), 8-15 dao da/bai cat nho giua bien, bai cat, vung biome rai tu nhien,
+// cong phao dai, ben thuyen dang cau tau, cay, nha, ruong, diem boss va diem spawn.
+// Chi dung phep tinh so hoc + Math.floor/sqrt/imul (ket qua giong het tren moi trinh duyet va Node),
+// KHONG dung sin/cos/atan2 (do chinh xac co the khac nhau giua cac engine) va KHONG Math.random.
+// Phu thuoc: shared/00-namespace.js, shared/01-constants.js, shared/02-enums.js, shared/05-rng.js, shared/14-data-islands.js,
+//            shared/20-mapgen-layout.js.
 
 (function (root) {
   'use strict';
@@ -12,6 +17,21 @@
   const MAP_W = CONST.MAP_TILES || 320;
   const MAP_H = CONST.MAP_TILES || 320;
 
+  // Ham nhieu, hinh dang va bo tri dao lay tu shared/20-mapgen-layout.js
+  const L = S.MAPLAYOUT;
+  const COAST_MIN = L.COAST_MIN;
+  const COAST_SPAN = L.COAST_SPAN;
+  const SHALLOW_MIN = L.SHALLOW_MIN;
+  const SHALLOW_SPAN = L.SHALLOW_SPAN;
+  const OWNER_ISLET = L.OWNER_ISLET;
+  const fbm = L.fbm;
+  const distOf = L.dist;
+  const shapeDist = L.shapeDist;
+  const reach = L.reach;
+
+  // Tile dat lien dat duoc cay/nha/ruong
+  const PLACEABLE = [T.GRASS, T.SAND, T.SNOW, T.DIRT, T.STONE, T.FLOOR, T.WOOD];
+
   function fnv1a(uint8Arr) {
     let hash = 2166136261;
     for (let i = 0; i < uint8Arr.length; i++) {
@@ -21,17 +41,159 @@
     return (hash >>> 0).toString(16).padStart(8, '0');
   }
 
+  // ----- Dia hinh tung dao -----
+
+  // Tile dat lien tai (x, y) cua dao; dist = khoang cach toi tam, rC = ban kinh bo tai diem nay
+  function landTile(isl, x, y, dx, dy, dist, rC, seed) {
+    const R = isl.radius;
+    const n = fbm(x, y, 7, seed + 7);
+
+    switch (isl.id) {
+      case 'islet':
+        if (isl.rock) return (dist < R * 0.7) ? T.STONE : T.SAND;
+        return (n > 0.72) ? T.STONE : T.SAND;
+      case 'fortress': {
+        // Tuong thanh day 2 o sat bo, 4 cong rong 3 o (Bac, Nam, Dong, Tay)
+        const inGate = (Math.abs(dx) <= 1 || Math.abs(dy) <= 1);
+        if (dist >= rC - 2) return inGate ? T.STONE : T.WALL;
+        return (dist <= R * 0.4) ? T.FLOOR : T.STONE;
+      }
+      case 'desert':
+        return (dist < R * 0.8 && n > 0.66) ? T.QUICKSAND : T.SAND;
+      case 'winter':
+        return (n > 0.64) ? T.ICE : T.SNOW;
+      case 'fire_ice': {
+        // Ranh gioi gon theo nhieu; nua Dong da nui lua co vung dung nham, nua Tay tuyet co mat bang
+        const side = dx + (fbm(x, y, 9, seed + 31) - 0.5) * 10;
+        if (side > 0) return (n > 0.6) ? T.LAVA : T.STONE;
+        return (n > 0.62) ? T.ICE : T.SNOW;
+      }
+      case 'canal_city': {
+        const ax = Math.abs(dx);
+        const ay = Math.abs(dy);
+        // Kenh doc va ngang rong 3 o, cau bac qua kenh moi 8 o, ke da 1 o hai ben kenh
+        if (ax <= 1) return (ay % 8 === 4) ? T.BRIDGE : T.SHALLOW;
+        if (ay <= 1) return (ax % 8 === 4) ? T.BRIDGE : T.SHALLOW;
+        if (ax === 2 || ay === 2) return T.STONE;
+        return (n > 0.7) ? T.STONE : T.FLOOR;
+      }
+      case 'mangrove': {
+        // Dao con o giua va cac cum dao ngoai, xen nuoc nong; cau go chu thap noi tu tam ra bo
+        const middle = dist >= R * 0.4 && dist <= R * 0.62;
+        const islet = dist < R * 0.4 || (dist > R * 0.62 && n > 0.36);
+        if (middle || !islet) {
+          if (Math.abs(dx) <= 1 || Math.abs(dy) <= 1) return T.BRIDGE;
+          return T.SHALLOW;
+        }
+        return (dist >= rC - 2) ? T.SAND : T.GRASS;
+      }
+      default: {
+        // Dao co (jungle, samurai, giant) va dao Ma (dat): bai cat 1-3 o quanh bo, mang biome phu
+        const beachW = 1 + fbm(x, y, 6, seed + 53) * 2;
+        if (isl.baseTile === T.GRASS && dist >= rC - beachW) return T.SAND;
+        if (isl.subTile !== undefined && isl.subTile !== T.SHALLOW && dist < R * 0.85 && n > 0.66) return isl.subTile;
+        return isl.baseTile;
+      }
+    }
+  }
+
+  // Ve 1 dao vao mang tiles; owner ghi dat lien thuoc dao nao (1..10 dao lon, >= 11 dao nho)
+  function paintIsland(tiles, owner, ownerId, isl, seed) {
+    const cx = isl.cx;
+    const cy = isl.cy;
+    const R = isl.radius;
+    const pad = SHALLOW_MIN + SHALLOW_SPAN + 1;
+    const bx = Math.ceil(reach(isl, 1, 0) + pad);
+    const by = Math.ceil(reach(isl, 0, 1) + pad);
+
+    for (let y = Math.max(1, cy - by); y <= Math.min(MAP_H - 2, cy + by); y++) {
+      for (let x = Math.max(1, cx - bx); x <= Math.min(MAP_W - 2, cx + bx); x++) {
+        const dx = x - cx;
+        const dy = y - cy;
+        const dist = shapeDist(isl, x, y, seed);
+        const rC = R * (COAST_MIN + COAST_SPAN * fbm(x, y, 9, seed));
+        const idx = y * MAP_W + x;
+
+        if (dist <= rC) {
+          tiles[idx] = landTile(isl, x, y, dx, dy, dist, rC, seed);
+          owner[idx] = ownerId;
+        } else if (dist <= rC + SHALLOW_MIN + SHALLOW_SPAN * fbm(x, y, 5, seed + 17)) {
+          if (tiles[idx] === T.DEEP) tiles[idx] = T.SHALLOW;
+        }
+      }
+    }
+  }
+
+  function isWaterTile(t) {
+    return t === T.DEEP || t === T.SHALLOW;
+  }
+
+  // Ben thuyen dang cau tau: di tu tam theo huong (ux, uy) toi mep bo,
+  // roi lat 2 o rong, dai toi khi cham nuoc sau (toi da 6 o). Tra ve o dau cau tau tren bo.
+  function buildPier(tiles, cx, cy, ux, uy) {
+    let lastLand = null;
+    for (let s = 0; s < 60; s++) {
+      const tx = Math.round(cx + ux * s);
+      const ty = Math.round(cy + uy * s);
+      if (tx < 1 || ty < 1 || tx >= MAP_W - 1 || ty >= MAP_H - 1) break;
+      const t = tiles[ty * MAP_W + tx];
+      if (!isWaterTile(t)) {
+        lastLand = { tx: tx, ty: ty, s: s };
+      } else if (lastLand) {
+        break;
+      }
+    }
+    if (!lastLand) return null;
+
+    // Vuong goc de cau tau rong 2 o
+    const px = Math.abs(ux) >= Math.abs(uy) ? 0 : 1;
+    const py = 1 - px;
+    for (let k = 1; k <= 6; k++) {
+      const tx = Math.round(cx + ux * (lastLand.s + k));
+      const ty = Math.round(cy + uy * (lastLand.s + k));
+      const i0 = ty * MAP_W + tx;
+      const i1 = (ty + py) * MAP_W + (tx + px);
+      if (tiles[i0] === T.DEEP && k > 2) break;
+      tiles[i0] = T.DOCK;
+      tiles[i1] = T.DOCK;
+    }
+    return lastLand;
+  }
+
+  // Lay mau diem ngau nhien trong dao (khong dung luong giac): thu toi da 'tries' lan
+  function sampleSpot(tiles, rng, isl, minF, maxF, okFn, tries) {
+    const R = isl.radius;
+    for (let i = 0; i < tries; i++) {
+      const p = (rng.next() * 2 - 1) * R * maxF;
+      const q = (rng.next() * 2 - 1) * R * maxF;
+      const d = distOf(p, q);
+      if (d < R * minF || d > R * maxF) continue;
+      // Doi tu toa do elip (p doc truc lon, q doc truc nho) sang toa do map
+      const tx = isl.cx + Math.round(isl.ux * p * isl.k - isl.uy * q / isl.k);
+      const ty = isl.cy + Math.round(isl.uy * p * isl.k + isl.ux * q / isl.k);
+      if (okFn(tx, ty, tiles[ty * MAP_W + tx])) return { tx: tx, ty: ty };
+    }
+    return null;
+  }
+
+  // Khong dat gan vat da co (khoang cach Chebyshev theo tile)
+  function farFrom(list, tx, ty, minGap) {
+    for (let i = 0; i < list.length; i++) {
+      if (Math.max(Math.abs(list[i].tx - tx), Math.abs(list[i].ty - ty)) < minGap) return false;
+    }
+    return true;
+  }
+
   function generate(seed) {
     const s = (typeof seed === 'number') ? seed : 1;
-    const rng = (S.RNG && S.RNG.create) ? S.RNG.create(s) : {
-      next: function () { return 0.5; }
-    };
+    const rng = (S.RNG && S.RNG.create) ? S.RNG.create(s) : { next: function () { return 0.5; } };
 
-    const totalTiles = MAP_W * MAP_H;
-    const tiles = new Uint8Array(totalTiles);
+    const tiles = new Uint8Array(MAP_W * MAP_H);
     tiles.fill(T.DEEP);
 
-    const islands = S.ISLANDS || {};
+    const defs = S.ISLANDS || {};
+    const keys = Object.keys(defs);
+    const owner = new Uint8Array(MAP_W * MAP_H);
     const docks = [];
     const spawns = [];
     const trees = [];
@@ -39,245 +201,126 @@
     const chests = [];
     const bosses = [];
 
-    // Duyet qua tung dao va tao dia hinh
-    for (const key in islands) {
-      const isl = islands[key];
+    // 1. Bo tri (rng rieng de doi bo tri khong lam lech viec dat vat), roi ve dia hinh (moi dao 1 hat nhieu rieng)
+    const layoutRng = (S.RNG && S.RNG.create) ? S.RNG.create((s * 7 + 13) | 0) : rng;
+    const placed = L.layoutIslands(layoutRng, defs, keys);
+    const islands = {};
+    for (let k = 0; k < placed.length; k++) islands[placed[k].id] = placed[k];
+    const islets = L.layoutIslets(layoutRng, placed);
+
+    for (let k = 0; k < keys.length; k++) {
+      paintIsland(tiles, owner, k + 1, islands[keys[k]], (s * 97 + k * 7919) | 0);
+    }
+    for (let k = 0; k < islets.length; k++) {
+      paintIsland(tiles, owner, OWNER_ISLET + k, islets[k], (s * 131 + k * 3571) | 0);
+    }
+    L.carveGaps(tiles, owner);
+
+    for (let k = 0; k < keys.length; k++) {
+      const isl = islands[keys[k]];
       const cx = isl.cx;
       const cy = isl.cy;
-      const baseR = isl.radius;
+      const placed = []; // moi vat tren dao nay, de giu khoang cach
 
-      const p1 = rng.next() * Math.PI * 2;
-      const p2 = rng.next() * Math.PI * 2;
-      const p3 = rng.next() * Math.PI * 2;
-      const shallowWidth = 3;
+      // 2. Diem spawn nguoi choi (tam dao)
+      spawns.push({ islandId: isl.id, tx: cx, ty: cy, x: cx * 16 + 8, y: cy * 16 + 8 });
+      placed.push({ tx: cx, ty: cy });
 
-      const boundR = Math.ceil(baseR + shallowWidth + 4);
-      const minX = Math.max(1, cx - boundR);
-      const maxX = Math.min(MAP_W - 2, cx + boundR);
-      const minY = Math.max(1, cy - boundR);
-      const maxY = Math.min(MAP_H - 2, cy + boundR);
-
-      for (let y = minY; y <= maxY; y++) {
-        for (let x = minX; x <= maxX; x++) {
-          const dx = x - cx;
-          const dy = y - cy;
-          const angle = Math.atan2(dy, dx);
-
-          const wave = 1.0 +
-            0.14 * Math.sin(3 * angle + p1) +
-            0.08 * Math.cos(5 * angle + p2) +
-            0.04 * Math.sin(7 * angle + p3);
-
-          const rCoast = baseR * wave;
-          const dist = Math.hypot(dx, dy);
-          const idx = y * MAP_W + x;
-
-          if (dist <= rCoast) {
-            let tileType = isl.baseTile;
-
-            if (isl.id === 'fire_ice') {
-              tileType = (dx > 0) ? T.LAVA : T.ICE;
-            } else if (isl.id === 'canal_city') {
-              if (Math.abs(dx) <= 1 || Math.abs(dy) <= 1) {
-                tileType = T.SHALLOW;
-              } else if (Math.abs(dx) === 2 || Math.abs(dy) === 2) {
-                tileType = T.BRIDGE;
-              } else {
-                tileType = T.FLOOR;
-              }
-            } else if (isl.id === 'fortress') {
-              if (dist >= rCoast - 2 && dist <= rCoast) {
-                tileType = T.WALL;
-              } else {
-                tileType = (dist <= baseR * 0.4) ? T.FLOOR : T.STONE;
-              }
-            } else if (isl.id === 'desert') {
-              tileType = (dist <= baseR * 0.35) ? T.QUICKSAND : T.SAND;
-            } else if (isl.id === 'mangrove') {
-              if (dist >= baseR * 0.4 && dist <= baseR * 0.6) {
-                if (Math.abs(dx) <= 1 || Math.abs(dy) <= 1) {
-                  tileType = T.BRIDGE;
-                } else {
-                  tileType = T.SHALLOW;
-                }
-              } else {
-                tileType = T.GRASS;
-              }
-            } else if (isl.subTile && dist <= baseR * 0.45) {
-              tileType = isl.subTile;
-            }
-
-            tiles[idx] = tileType;
-
-          } else if (dist <= rCoast + shallowWidth) {
-            if (tiles[idx] === T.DEEP) {
-              tiles[idx] = T.SHALLOW;
-            }
-          }
+      // 3. Ben thuyen: phao dai 2 ben qua cong Bac/Nam; dao khac 1 ben huong ve tam ban do
+      const dirs = [];
+      if (isl.id === 'fortress') {
+        dirs.push([0, -1], [0, 1]);
+      } else {
+        const vx = MAP_W / 2 - cx;
+        const vy = MAP_H / 2 - cy;
+        const len = distOf(vx, vy) || 1;
+        dirs.push([vx / len, vy / len]);
+      }
+      for (let d = 0; d < dirs.length; d++) {
+        const land = buildPier(tiles, cx, cy, dirs[d][0], dirs[d][1]);
+        if (land) {
+          docks.push({ islandId: isl.id, tx: land.tx, ty: land.ty, x: land.tx * 16 + 8, y: land.ty * 16 + 8 });
+          placed.push({ tx: land.tx, ty: land.ty });
         }
       }
 
-      // 1. Diem spawn nguoi choi
-      spawns.push({
-        islandId: isl.id,
-        tx: cx,
-        ty: cy,
-        x: cx * 16 + 8,
-        y: cy * 16 + 8
-      });
+      // Phao dai: chua trong 2 truc cong (rong 5 o) de cay/nha khong bit loi ra vao
+      const onLand = function (tx, ty, t) {
+        if (isl.id === 'fortress' && (Math.abs(tx - cx) <= 2 || Math.abs(ty - cy) <= 2)) return false;
+        return PLACEABLE.indexOf(t) !== -1;
+      };
 
-      // 2. Diem spawn Boss cua dao
+      // 4. Boss: vong giua dao
       if (isl.boss) {
-        const bAngle = rng.next() * Math.PI * 2;
-        const bDist = baseR * 0.45;
-        const btx = Math.round(cx + Math.cos(bAngle) * bDist);
-        const bty = Math.round(cy + Math.sin(bAngle) * bDist);
-        bosses.push({
-          id: isl.boss,
-          islandId: isl.id,
-          tx: btx,
-          ty: bty,
-          x: btx * 16 + 8,
-          y: bty * 16 + 8
-        });
+        const b = sampleSpot(tiles, rng, isl, 0.35, 0.6, onLand, 200) || { tx: cx, ty: cy };
+        bosses.push({ id: isl.boss, islandId: isl.id, tx: b.tx, ty: b.ty, x: b.tx * 16 + 8, y: b.ty * 16 + 8 });
       }
 
-      // 3. Ben thuyen (dock) - Dat dung o ria bo bien
-      const dockAngles = (isl.id === 'fortress')
-        ? [Math.PI / 2, -Math.PI / 2]
-        : [Math.atan2(cy - 160, cx - 160)];
-
-      for (let di = 0; di < dockAngles.length; di++) {
-        const dAng = dockAngles[di];
-        const wDock = 1.0 +
-          0.14 * Math.sin(3 * dAng + p1) +
-          0.08 * Math.cos(5 * dAng + p2) +
-          0.04 * Math.sin(7 * dAng + p3);
-        const dockDist = Math.round(baseR * wDock);
-        const dockX = Math.round(cx + Math.cos(dAng) * dockDist);
-        const dockY = Math.round(cy + Math.sin(dAng) * dockDist);
-
-        for (let dy = 0; dy <= 1; dy++) {
-          for (let dx = 0; dx <= 1; dx++) {
-            const dtx = dockX + dx;
-            const dty = dockY + dy;
-            if (dtx >= 0 && dtx < MAP_W && dty >= 0 && dty < MAP_H) {
-              tiles[dty * MAP_W + dtx] = T.DOCK;
-            }
-          }
-        }
-
-        docks.push({
-          islandId: isl.id,
-          tx: dockX,
-          ty: dockY,
-          x: dockX * 16 + 8,
-          y: dockY * 16 + 8
-        });
-      }
-
-      // 4. Cay coi theo biome (scale theo dien tich moi: 8-11 cay moi dao)
-      let treeType = 'tree_palm';
-      if (isl.id === 'winter') treeType = 'tree_pine';
-      else if (isl.id === 'jungle' || isl.id === 'giant') treeType = 'tree_jungle';
-
-      const treeCount = (isl.props && isl.props.trees) ? isl.props.trees : Math.round(baseR * 0.35);
-      for (let i = 0; i < treeCount; i++) {
-        const tAng = (i / treeCount) * Math.PI * 2 + rng.next() * 0.4;
-        let tDist = baseR * (0.35 + rng.next() * 0.4);
-        if (isl.id === 'mangrove' && tDist >= baseR * 0.38 && tDist <= baseR * 0.62) {
-          tDist = (i % 2 === 0) ? (baseR * 0.25) : (baseR * 0.75);
-        }
-        const ttx = Math.round(cx + Math.cos(tAng) * tDist);
-        const tty = Math.round(cy + Math.sin(tAng) * tDist);
-        const tidx = tty * MAP_W + ttx;
-
-        // Chi dat cay tren dat lien
-        if (tiles[tidx] !== T.DEEP && tiles[tidx] !== T.SHALLOW && tiles[tidx] !== T.WALL && tiles[tidx] !== T.DOCK) {
-          tiles[tidx] = T.TREE; // Dat vat can TREE vao ma tran
-          trees.push({
-            type: treeType,
-            islandId: isl.id,
-            tx: ttx,
-            ty: tty,
-            x: ttx * 16 + 8,
-            y: tty * 16 + 8
-          });
-        }
-      }
-
-      // 5. Nha cua (2-3 nha moi dao theo dien tich moi)
+      // 5. Nha (cach nhau >= 6 o, khong sat tam spawn)
       let houseType = 'house_wood';
       if (isl.id === 'fortress') houseType = 'house_stone';
       else if (isl.id === 'canal_city' || isl.id === 'samurai') houseType = 'house_small';
-
-      const houseCount = (isl.props && isl.props.houses) ? isl.props.houses : ((isl.id === 'fortress' || isl.id === 'canal_city' || isl.id === 'giant') ? 3 : 2);
+      const houseCount = (isl.props && isl.props.houses) || 2;
       for (let i = 0; i < houseCount; i++) {
-        const hAng = (i / houseCount) * Math.PI * 2 + rng.next() * 0.4;
-        let hDist = baseR * (0.28 + rng.next() * 0.35);
-        if (isl.id === 'mangrove' && hDist >= baseR * 0.38 && hDist <= baseR * 0.62) {
-          hDist = (i === 0) ? (baseR * 0.25) : (baseR * 0.75);
-        }
-        const htx = Math.round(cx + Math.cos(hAng) * hDist);
-        const hty = Math.round(cy + Math.sin(hAng) * hDist);
-        const hidx = hty * MAP_W + htx;
-
-        if (tiles[hidx] !== T.DEEP && tiles[hidx] !== T.SHALLOW && tiles[hidx] !== T.WALL && tiles[hidx] !== T.DOCK && tiles[hidx] !== T.TREE) {
-          tiles[hidx] = T.HOUSE_WALL;
-          houses.push({
-            type: houseType,
-            islandId: isl.id,
-            tx: htx,
-            ty: hty,
-            x: htx * 16 + 8,
-            y: hty * 16 + 8
-          });
-        }
+        const h = sampleSpot(tiles, rng, isl, 0.2, 0.7, function (tx, ty, t) {
+          return onLand(tx, ty, t) && farFrom(placed, tx, ty, 6);
+        }, 300);
+        if (!h) continue;
+        tiles[h.ty * MAP_W + h.tx] = T.HOUSE_WALL;
+        houses.push({ type: houseType, islandId: isl.id, tx: h.tx, ty: h.ty, x: h.tx * 16 + 8, y: h.ty * 16 + 8 });
+        placed.push(h);
       }
 
-      // 6. Ruong bau tren dao (scale theo dien tich: fortress 9 ruong, cac dao khac 5 ruong)
-      const chestCount = (isl.props && isl.props.chests) ? isl.props.chests : ((isl.id === 'fortress') ? 9 : 5);
+      // 6. Cay (cach nhau >= 2 o)
+      let treeType = 'tree_palm';
+      if (isl.id === 'winter') treeType = 'tree_pine';
+      else if (isl.id === 'jungle' || isl.id === 'giant') treeType = 'tree_jungle';
+      const treeCount = (isl.props && isl.props.trees) || Math.round(isl.radius * 0.35);
+      for (let i = 0; i < treeCount; i++) {
+        const t = sampleSpot(tiles, rng, isl, 0.15, 0.85, function (tx, ty, tt) {
+          return onLand(tx, ty, tt) && tt !== T.FLOOR && farFrom(placed, tx, ty, 2);
+        }, 300);
+        if (!t) continue;
+        tiles[t.ty * MAP_W + t.tx] = T.TREE;
+        trees.push({ type: treeType, islandId: isl.id, tx: t.tx, ty: t.ty, x: t.tx * 16 + 8, y: t.ty * 16 + 8 });
+        placed.push(t);
+      }
+
+      // 7. Ruong (cach nhau >= 3 o)
+      const chestCount = (isl.props && isl.props.chests) || 5;
       for (let i = 0; i < chestCount; i++) {
-        const cAng = (i / chestCount) * Math.PI * 2 + rng.next() * 0.4;
-        let cDist = baseR * (0.25 + rng.next() * 0.45);
-        if (isl.id === 'mangrove' && cDist >= baseR * 0.38 && cDist <= baseR * 0.62) {
-          cDist = (i % 2 === 0) ? (baseR * 0.25) : (baseR * 0.75);
-        }
-        const ctx = Math.round(cx + Math.cos(cAng) * cDist);
-        const cty = Math.round(cy + Math.sin(cAng) * cDist);
-        const cidx = cty * MAP_W + ctx;
-
-        if (tiles[cidx] !== T.DEEP && tiles[cidx] !== T.SHALLOW && tiles[cidx] !== T.WALL && tiles[cidx] !== T.DOCK && tiles[cidx] !== T.TREE && tiles[cidx] !== T.HOUSE_WALL) {
-          let tier = 'wood';
-          if (isl.id === 'fortress') {
-            tier = (i === 0) ? 'gold' : ((i <= 4) ? 'iron' : 'wood');
-          } else {
-            tier = (i < 2) ? 'iron' : 'wood';
-          }
-
-          chests.push({
-            id: `chest_${isl.id}_${i}`,
-            tier: tier,
-            islandId: isl.id,
-            tx: ctx,
-            ty: cty,
-            x: ctx * 16 + 8,
-            y: cty * 16 + 8,
-            opened: false
-          });
-        }
+        const c = sampleSpot(tiles, rng, isl, 0.15, 0.75, function (tx, ty, t) {
+          return onLand(tx, ty, t) && farFrom(placed, tx, ty, 3);
+        }, 300);
+        if (!c) continue;
+        let tier = 'wood';
+        if (isl.id === 'fortress') tier = (i === 0) ? 'gold' : ((i <= 4) ? 'iron' : 'wood');
+        else tier = (i < 2) ? 'iron' : 'wood';
+        chests.push({
+          id: `chest_${isl.id}_${i}`, tier: tier, islandId: isl.id,
+          tx: c.tx, ty: c.ty, x: c.tx * 16 + 8, y: c.ty * 16 + 8, opened: false
+        });
+        placed.push(c);
       }
     }
 
-    const hash = fnv1a(tiles);
+    // 8. Dao nho >= 4 o: 1 cay dua lam cho nup, khong co ruong/boss
+    for (let k = 0; k < islets.length; k++) {
+      const it = islets[k];
+      if (it.radius < 4 || PLACEABLE.indexOf(tiles[it.cy * MAP_W + it.cx]) === -1) continue;
+      tiles[it.cy * MAP_W + it.cx] = T.TREE;
+      trees.push({ type: 'tree_palm', islandId: 'islet', tx: it.cx, ty: it.cy, x: it.cx * 16 + 8, y: it.cy * 16 + 8 });
+    }
 
     return {
       seed: s,
       width: MAP_W,
       height: MAP_H,
       tiles: tiles,
-      hash: hash,
+      hash: fnv1a(tiles),
       islands: islands,
+      islets: islets,
+      owner: owner,
       docks: docks,
       spawns: spawns,
       trees: trees,
@@ -289,7 +332,8 @@
 
   S.MAPGEN = Object.freeze({
     generate: generate,
-    hash: fnv1a
+    hash: fnv1a,
+    noise: L.noise
   });
 
 })(typeof globalThis !== 'undefined' ? globalThis : window);

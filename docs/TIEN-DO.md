@@ -1,6 +1,6 @@
 # TIẾN ĐỘ & KẾ HOẠCH
 
-## TASK HIỆN TẠI: M03B-T01f
+## TASK HIỆN TẠI: M03B-T01g
 
 ## Quyết định đã chốt
 
@@ -22,7 +22,7 @@
 | B01 | M01-T04 | Reconnect nhân đôi nhân vật, chạy gấp đôi | Đã sửa M03B-T01e |
 | B02 | M03B-T01c | Lệnh `tp` chạy được khi không `--dev`, `/tp __proto__` làm tọa độ NaN | Đã sửa M03B-T01e |
 | B03 | M00-T01 | Đọc được file ngoài `client/`, `shared/` (kể cả `.git`) | Đã sửa M03B-T01e |
-| B04 | M03-T01 | Seed 2: pháo đài bị tường bao kín, không có lối ra | Mở, sửa ở M03B-T01f |
+| B04 | M03-T01 | Seed 2: pháo đài bị tường bao kín, không có lối ra | Đã sửa M03B-T01f |
 | B05 | M01-T01 | `botMix` không đặt được giá trị 0 | Đã sửa (thu gọn phạm vi) |
 
 ---
@@ -104,7 +104,7 @@
 - [x] **T01e Di chuyển chuẩn**
   - Mục tiêu: bỏ chạy nhanh (Shift về Lục Thức ô 1), `shared/22-move.js` dùng chung server/client, server xếp hàng input theo seq, nội suy hiển thị, camera theo dt, sửa reconnect nhân đôi, khóa `tp` sau `--dev`.
   - Xong khi: run_all PASS; test input dồn gói vẫn đi đúng quãng đường; đi vào cây/nước không bị kéo ngược.
-- [ ] **T01f Chiều sâu đảo và nước** [Opus]
+- [x] **T01f Chiều sâu đảo và nước** [Opus]
   - Mục tiêu: vách bờ + bóng đổ, nước gradient + gợn động + bọt bờ, bãi cát, bờ theo nhiễu, texture riêng từng biome.
 - [ ] **T01g Sắp theo y + ánh sáng** [Sonnet]
   - Mục tiêu: một danh sách vẽ sắp theo y, lớp ánh sáng theo ART-REF (ambient theo vùng).

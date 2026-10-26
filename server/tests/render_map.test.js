@@ -1,6 +1,6 @@
 // server/tests/render_map.test.js
-// Unit test cho thuat toan phan chia chunk 16x16 tile, camera culling va logic minimap / ban do lon.
-// Phu thuoc: server/tests/assert.js, shared/21-mapgen.js, client/js/05a-render-map.js.
+// Unit test cho thuat toan phan chia chunk 16x16 tile, camera culling, ban do do sau nuoc va logic minimap / ban do lon.
+// Phu thuoc: server/tests/assert.js, shared/20-mapgen-layout.js, shared/21-mapgen.js, client/js/05a-render-map.js.
 
 'use strict';
 
@@ -13,6 +13,7 @@ require('../../shared/01-constants');
 require('../../shared/02-enums');
 require('../../shared/05-rng');
 require('../../shared/14-data-islands');
+require('../../shared/20-mapgen-layout');
 require('../../shared/21-mapgen');
 require('../../client/js/04-camera');
 require('../../client/js/05a-render-map');
@@ -60,6 +61,27 @@ function run() {
   const mapData = S.MAPGEN.generate(1);
   OP.R.initMap(mapData);
   assert.ok(mapData.hash, 'MapData phai co ma hash');
+
+  // Ban do do sau nuoc (M03B-T01f): nuoc nong 0..2, nuoc sau 3..5, bien khoi = 5, sat bo = 0
+  const W = mapTiles;
+  let nearShore = false;
+  for (let i = 0; i < W * W; i++) {
+    const t = mapData.tiles[i];
+    const d = OP.R.getDepth(i % W, Math.floor(i / W));
+    if (t === S.TILE.SHALLOW) assert.ok(d >= 0 && d <= 2, `Do sau nuoc nong phai 0..2, thuc te ${d}`);
+    if (t === S.TILE.DEEP) assert.ok(d >= 3 && d <= 5, `Do sau nuoc sau phai 3..5, thuc te ${d}`);
+    if (t === S.TILE.SHALLOW && !nearShore) {
+      const x = i % W;
+      const land = [mapData.tiles[i - 1], mapData.tiles[i + 1], mapData.tiles[i - W], mapData.tiles[i + W]]
+        .some(n => n !== S.TILE.DEEP && n !== S.TILE.SHALLOW);
+      if (land && x > 0 && x < W - 1) {
+        assert.strictEqual(d, 0, 'O nuoc nong sat dat phai co do sau 0');
+        nearShore = true;
+      }
+    }
+  }
+  assert.ok(nearShore, 'Phai tim thay o nuoc nong sat bo');
+  assert.strictEqual(OP.R.getDepth(5, 5), 5, 'Bien khoi (5, 5) phai co do sau 5');
 
   // 4. Kiem tra he so scale ban do lon (Big Map Tab)
   const mapAreaSize = 192;
