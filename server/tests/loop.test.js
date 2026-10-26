@@ -32,52 +32,36 @@ module.exports = {
 
     const player = match.players.get(1);
     assert.ok(player, 'Player 1 phai ton tai');
-    assert.strictEqual(player.x, 240, 'Toa do x ban dau phai la 240');
-    assert.strictEqual(player.y, 135, 'Toa do y ban dau phai la 135');
+    const spawn = match.world.getIslandSpawn('fortress');
+    assert.strictEqual(player.x, spawn.x, 'Nguoi choi moi phai dung o diem spawn dao trung tam');
+    assert.strictEqual(player.y, spawn.y, 'Nguoi choi moi phai dung o diem spawn dao trung tam');
 
-    // 1. Test di chuyen sang phai (mx = 1, my = 0) trong 1 giay (30 tick)
-    match.onClientMessage(client, {
-      t: 'in',
-      seq: 1,
-      mx: 1,
-      my: 0,
-      aim: 0,
-      btn: 0
-    });
+    // Map gia toan co de do quang duong chinh xac (khong vuong cay/nha)
+    const S = globalThis.OP_SHARED;
+    const N = S.CONST.MAP_TILES;
+    match.world.map = { tiles: new Uint8Array(N * N).fill(S.TILE.GRASS) };
+    player.x = 1000;
+    player.y = 1000;
 
+    // 1. Di sang phai: moi tick nhan 1 input (giong client gui 30Hz) -> 30 input = 90px
     const dt = 1 / 30;
-    for (let i = 0; i < 30; i++) {
+    for (let s = 1; s <= 30; s++) {
+      match.onClientMessage(client, { t: 'in', seq: s, mx: 1, my: 0, aim: 0, btn: 0 });
       match.tick(dt);
     }
+    assert.ok(Math.abs(player.x - 1090) < 0.001, `X phai bang 1090 sau 30 input, thuc te: ${player.x}`);
+    assert.strictEqual(player.y, 1000, 'Y khong duoc thay doi khi my = 0');
+    assert.strictEqual(player.lastInputSeq, 30, 'lastInputSeq phai la 30');
 
-    // Toc do 90px/s -> sau 1s di chuyen 90px -> 240 + 90 = 330
-    assert.ok(Math.abs(player.x - 330) < 0.001, `X phai bang 330 sau 30 tick, thuc te: ${player.x}`);
-    assert.strictEqual(player.y, 135, 'Y khong duoc thay doi khi my = 0');
-    assert.strictEqual(player.lastInputSeq, 1, 'lastInputSeq phai la 1');
-
-    // 2. Test chuan hoa vector di chuyen duong cheo (mx = 1, my = 1)
+    // 2. Duong cheo (1, 1) duoc chuan hoa: 30 input -> dung 90px
     const prevX = player.x;
     const prevY = player.y;
-
-    match.onClientMessage(client, {
-      t: 'in',
-      seq: 2,
-      mx: 1,
-      my: 1,
-      aim: 0,
-      btn: 0
-    });
-
-    for (let i = 0; i < 30; i++) {
+    for (let s = 31; s <= 60; s++) {
+      match.onClientMessage(client, { t: 'in', seq: s, mx: 1, my: 1, aim: 0, btn: 0 });
       match.tick(dt);
     }
-
-    const dx = player.x - prevX;
-    const dy = player.y - prevY;
-    const totalDist = Math.hypot(dx, dy);
-
-    // Khoang cach di chuyen trong 1 giay khong duoc vuot qua 90px (do da chuan hoa)
-    assert.ok(Math.abs(totalDist - 90) < 0.001, `Tong quang duong di chuyen phai bang 90px, thuc te: ${totalDist}`);
+    const totalDist = Math.hypot(player.x - prevX, player.y - prevY);
+    assert.ok(Math.abs(totalDist - 90) < 0.001, `Tong quang duong di cheo phai bang 90px, thuc te: ${totalDist}`);
 
     // 3. Test dong goi snapshot
     net.sent = [];
@@ -87,7 +71,7 @@ module.exports = {
     const snap = net.sent[0].msg;
     assert.strictEqual(snap.t, 'snap', 'Message phai la snap');
     assert.strictEqual(snap.tick, 60, 'Tick phai bang 60 sau 60 lan tick');
-    assert.strictEqual(snap.ack, 2, 'ack phai bang lastInputSeq la 2');
+    assert.strictEqual(snap.ack, 60, 'ack phai bang lastInputSeq la 60');
     assert.ok(snap.me && typeof snap.me.x === 'number', 'me phai chua toa do x');
     assert.ok(Array.isArray(snap.ents), 'ents phai la mang');
   }

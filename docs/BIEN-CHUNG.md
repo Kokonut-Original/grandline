@@ -98,6 +98,11 @@ CommonJS. Mỗi file `module.exports = { ... }`.
 | MAX_PLAYERS | 32 | Số người tối đa |
 | RECONNECT_SEC | 30 | Giữ nhân vật khi rớt mạng |
 | INPUT_MAX_PER_SEC | 60 | Server bỏ qua input vượt mức này |
+| INPUT_QUEUE_MAX | 10 | Hàng đợi input tối đa mỗi người (quá thì bỏ lệnh cũ nhất) |
+| INPUT_BURST | 6 | Số lượt di chuyển tích lũy tối đa (bù gói đến dồn, trung bình vẫn TICK_HZ/giây) |
+| MSG_MAX_BYTES | 16384 | Message lớn hơn thì server đóng kết nối |
+| MSG_MAX_PER_SEC | 120 | Tổng message mỗi giây mỗi client, vượt thì bỏ |
+| CHAT_MAX_PER_SEC | 2 | Số tin chat tối đa mỗi giây |
 
 **Chỉ số người chơi**
 
@@ -120,6 +125,17 @@ CommonJS. Mỗi file `module.exports = { ... }`.
 | SHALLOW_MULT | 0.8 | Tốc độ người thường ở nước nông |
 | DROWN_PCT_PER_SEC | 0.17 | % máu tối đa mất mỗi giây khi chìm |
 | SWIM_STAMINA_COST | 6 | Thể lực tốn mỗi giây khi bơi |
+| SINK_MULT | 0.2 | Tốc độ người có trái khi chìm ở nước sâu |
+| SWIM_EXHAUST_DPS | 5 | Máu mất mỗi giây khi bơi hết thể lực |
+| SHALLOW_STAMINA_REGEN | 5 | Hồi thể lực mỗi giây ở nước nông |
+
+**Địa hình đặc biệt** (hệ số tính theo mỗi bước 1/TICK_HZ)
+
+| Tên | Giá trị | Ý nghĩa |
+|---|---|---|
+| QUICKSAND_MULT | 0.5 | Tốc độ trên cát lún |
+| ICE_KEEP | 0.94 | Phần vận tốc giữ lại mỗi bước trên băng |
+| ICE_ACCEL | 0.08 | Phần vận tốc mong muốn cộng thêm mỗi bước trên băng |
 
 **Inventory**
 
@@ -260,9 +276,13 @@ scroll_soru:    { id, name, kind: 'SCROLL', tier: 'B', roku: 'soru',
 { id, name, hp, speed, radius, attacks: [ { id, telegraph, dmg, dmgType, range, cd } ],
   drops: [ { pool: 'A', chance: 1 }, ... ], island }
 
-// S.ISLANDS (14)
-{ id, name, center: [tx, ty], radius, biome, boss, docks: 2,
+// S.ISLANDS (14) — đúng theo code từ M03B-T01c
+{ id, name, cx, cy,                 // tâm đảo (tile)
+  radius,                           // bán kính (tile), cho phép số lẻ .5
+  baseTile, subTile,                // TILE nền và TILE phụ (biome)
+  boss, desc,
   props: { trees, houses, chests } }
+// Bến thuyền (1–2 mỗi đảo) do mapgen sinh, nằm trong map.docks, không khai báo trong S.ISLANDS.
 
 // S.BOATS (15)
 { id, name, seats, speed, hp, fuel: null | 60, cannon: null | { dmg, cd, aoe } }
@@ -304,6 +324,23 @@ player = {
   lastInputSeq: 0,
 }
 ```
+
+**Di chuyển dùng chung (`shared/22-move.js`, `S.MOVE`)**
+
+Server và client dự đoán dùng CÙNG hàm, nên chạy lại input chưa ack ra đúng vị trí server.
+
+```js
+S.MOVE.STEP_DT                         // 1 / TICK_HZ, mỗi input = 1 bước
+S.MOVE.step(state, input, map, opts)   // state {x,y,vx,vy} bị sửa, thêm state.water
+                                       // input {mx,my}; map {tiles}; opts {hasFruit, onBoat}
+S.MOVE.waterAt(map, x, y)              // WATER.LAND | SHALLOW | DEEP
+S.MOVE.blockedAt(map, x, y, r)         // chạm tile trong S.TILE_BLOCKING không
+S.MOVE.findFreeSpot(map, x, y, maxTiles)
+```
+
+- Mỗi message `in` là 1 bước. Server xếp hàng theo `seq` (seq cũ/trùng bị bỏ), mỗi tick xử lý theo ngân sách `INPUT_BURST`.
+- Môi trường (thể lực, chết đuối) tính theo tick ở `server/physics.js`, không dự đoán ở client.
+- Player có thêm trường nội bộ server: `inputQueue, lastQueuedSeq, moveBudget, btn, lastChatAt` (không gửi qua mạng).
 
 **Các entity khác**
 
@@ -365,7 +402,9 @@ Mọi message là JSON có trường `t`. Tên `t` lấy từ `S.MSG`.
 
 **Snapshot**
 
-`me` chứa đầy đủ trạng thái của chính người chơi đó (giống entity player, bỏ trường nội bộ).
+`me` chứa đầy đủ trạng thái của chính người chơi đó (giống entity player, bỏ trường nội bộ). Hiện có: `id, x, y, vx, vy` (độ chính xác đầy đủ, không làm tròn), `aim, hp, hm, stamina, water, fruitId, onBoatId, name, colors`.
+
+Ngay sau `welcome`, server gửi thêm 1 message `phase` (phase hiện tại) để client biết hiện/ẩn lobby.
 
 `ents` là mảng object gọn. Mọi entity đều có `i` (id), `k` (kind), `x`, `y`. Trường riêng theo loại:
 
@@ -561,7 +600,7 @@ Mỗi 10 giây ghi một dòng `perf`: thời gian tick trung bình và lớn nh
 | `--no-launch` | Bỏ qua bắn đại bác, đặt người chơi ở đảo trung tâm |
 | `--headless-test` | Tự start trận khi có ≥ 2 client, dùng cho smoke test |
 
-**Lệnh dev** (gõ trong chat, chỉ khi có `--dev`)
+**Lệnh dev** (gõ trong chat bắt đầu bằng `/`, hoặc gửi `act` với `a: 'dev'`, `arg: '/lệnh ...'`; chỉ chạy khi có `--dev`, kết quả trả về bằng `toast`; xử lý ở `server/devcmd.js`). Đã có: `/tp`. Các lệnh khác thêm dần theo milestone.
 
 | Lệnh | Tác dụng |
 |---|---|
@@ -589,4 +628,6 @@ Mỗi 10 giây ghi một dòng `perf`: thời gian tick trung bình và lớn nh
 |---|---|---|
 | — | — | Bản đầu |
 | 2026-10-26 | M03B-T01 | Đổi chuẩn palette/viền, không đổi tên hay schema |
-| 2026-10-26 | M03B-T01c | Đổi giá trị radius/center trong S.ISLANDS và tham số mapgen, không đổi schema |
+| 2026-10-26 | M03B-T01c | Đổi giá trị radius/center trong S.ISLANDS và tham số mapgen (schema thật dùng cx/cy, ghi lại ở M03B-T01e) |
+| 2026-10-26 | (ngoài kế hoạch) | Commit "tầm nhìn 1.5x" đã thêm `BTN.SPRINT`, `KEYS.SPRINT` và đổi `KEYS.ROKU1` sang KeyZ mà không ghi ở đây |
+| 2026-10-26 | M03B-T01e | Bỏ `BTN.SPRINT`, `KEYS.SPRINT`; `KEYS.ROKU1` về lại ShiftLeft. Thêm CONST: INPUT_QUEUE_MAX, INPUT_BURST, MSG_MAX_BYTES, MSG_MAX_PER_SEC, CHAT_MAX_PER_SEC, SINK_MULT, SWIM_EXHAUST_DPS, SHALLOW_STAMINA_REGEN, QUICKSAND_MULT, ICE_KEEP, ICE_ACCEL. Thêm `S.MOVE` (shared/22-move.js). Sửa schema S.ISLANDS theo code. `snap.me` thêm water, fruitId, onBoatId, bỏ sprint. Server gửi `phase` ngay sau `welcome`. Lệnh dev qua `act`/chat, chỉ khi `--dev`. Player server dùng `fruitId`, `onBoatId`, `water` đúng mục 6 |

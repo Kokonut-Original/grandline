@@ -1,6 +1,6 @@
 // server/server.js
 // Entry point: khoi dong HTTP server phat file tinh, WebSocket server va in dia chi IP.
-// Phu thuoc: http, fs, path, os, ws.
+// Phu thuoc: http, fs, path, os, ws, shared/01-constants.js, server/net.js, server/match.js, server/log.js.
 
 'use strict';
 
@@ -47,6 +47,8 @@ function parseArgs(args) {
 const flags = parseArgs(process.argv.slice(2));
 const PORT = flags.port;
 const ROOT_DIR = path.resolve(__dirname, '..');
+const CLIENT_DIR = path.join(ROOT_DIR, 'client');
+const SHARED_DIR = path.join(ROOT_DIR, 'shared');
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -68,27 +70,34 @@ function serveStatic(req, res) {
 
   // Bo qua query string
   const urlPath = req.url.split('?')[0];
+
+  // Bao mat: chi phat file trong client/ va shared/. Chan '..', '\', ky tu NUL va ma hoa %
+  // (chuoi % co the giau '..'); file cua game khong co ten nao can cac ky tu nay.
+  if (/\.\.|\\|\0|%/.test(urlPath)) {
+    res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
+    res.end('Forbidden');
+    return;
+  }
+
+  let baseDir = CLIENT_DIR;
   let relativePath = '';
 
   if (urlPath === '/' || urlPath === '/index.html') {
-    relativePath = path.join('client', 'index.html');
+    relativePath = 'index.html';
   } else if (urlPath.startsWith('/client/')) {
-    relativePath = urlPath.slice(1);
+    relativePath = urlPath.slice('/client/'.length);
   } else if (urlPath.startsWith('/shared/')) {
-    relativePath = urlPath.slice(1);
-  } else if (urlPath.startsWith('/fonts/')) {
-    relativePath = path.join('client', urlPath.slice(1));
-  } else if (urlPath === '/style.css') {
-    relativePath = path.join('client', 'style.css');
+    baseDir = SHARED_DIR;
+    relativePath = urlPath.slice('/shared/'.length);
   } else {
-    // Thu kiem tra trong client/ hoac shared/
-    relativePath = path.join('client', urlPath.slice(1));
+    // /fonts/..., /style.css ... nam trong client/
+    relativePath = urlPath.slice(1);
   }
 
-  const filePath = path.resolve(ROOT_DIR, relativePath);
+  const filePath = path.resolve(baseDir, relativePath);
 
-  // Bao mat: chan truy cap ngoai thu muc goc
-  if (!filePath.startsWith(ROOT_DIR)) {
+  // Chot chan cuoi: duong dan that phai nam TRONG thu muc duoc phep (co dau phan cach)
+  if (!filePath.startsWith(baseDir + path.sep)) {
     res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
     res.end('Forbidden');
     return;
@@ -120,11 +129,35 @@ function serveStatic(req, res) {
   });
 }
 
+require('../shared/00-namespace.js');
+require('../shared/01-constants.js');
 const NetManager = require('./net.js');
 const MatchManager = require('./match.js');
+const logger = require('./log.js');
+const S = globalThis.OP_SHARED;
+
+// Loi khong bat duoc: ghi log ngay (dong bo) roi thoat, de con dau vet trong logs/
+process.on('uncaughtException', (err) => {
+  logger.fatal('server', 'Loi nghiem trong, server dung', { err: String(err && err.stack || err) });
+  process.exit(1);
+});
 
 const server = http.createServer(serveStatic);
-const wss = new WebSocketServer({ server });
+// maxPayload: message lon hon MSG_MAX_BYTES bi ws dong ket noi (mac dinh cua ws la 100 MiB)
+const wss = new WebSocketServer({ server, maxPayload: S.CONST.MSG_MAX_BYTES });
+
+server.on('error', (err) => {
+  if (err && err.code === 'EADDRINUSE') {
+    logger.fatal('server', `Cong ${PORT} dang bi chuong trinh khac dung. Chay lai voi --port <so khac>.`, {});
+  } else {
+    logger.fatal('server', 'Loi HTTP server', { err: String(err && err.stack || err) });
+  }
+  process.exit(1);
+});
+
+wss.on('error', (err) => {
+  logger.error('server', 'Loi WebSocket server', { err: String(err && err.message || err) });
+});
 
 const net = new NetManager();
 const match = new MatchManager(flags);

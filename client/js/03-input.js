@@ -1,6 +1,6 @@
 // client/js/03-input.js
-// Lang nghe ban phim va chuot, tinh toan vector di chuyen, goc ngam va bitmask input.
-// Phu thuoc: client/js/00-boot.js, shared/01-constants.js, shared/04-keybinds.js.
+// Lang nghe ban phim va chuot, tinh vector di chuyen, goc ngam va bitmask input (khong tu gui mang).
+// Phu thuoc: client/js/00-boot.js, client/js/04-camera.js, shared/01-constants.js, shared/04-keybinds.js.
 
 (function () {
   'use strict';
@@ -8,16 +8,15 @@
   const OP = window.OP = window.OP || {};
   const S = OP.S || (typeof globalThis !== 'undefined' ? globalThis.OP_SHARED : {});
 
-  let seq = 0;
   const keysDown = new Set();
-  let mouseScreenX = 240;
-  let mouseScreenY = 135;
+  let mouseScreenX = S.CONST.VIEW_W / 2;
+  let mouseScreenY = S.CONST.VIEW_H / 2;
   let mouseButtons = 0;
-  let sendInterval = null;
+  let initialized = false;
 
   OP.IN = {
     init: function () {
-      if (sendInterval) return;
+      if (initialized) return;
 
       window.addEventListener('keydown', function (e) {
         // Khong bat phim khi dang go trong input/textarea
@@ -59,40 +58,31 @@
         }
       });
 
-      // Dinh thoi gui input 30Hz
-      const tickHz = (S.CONST && S.CONST.TICK_HZ) ? S.CONST.TICK_HZ : 30;
-      const intervalMs = Math.floor(1000 / tickHz);
-
-      sendInterval = setInterval(function () {
-        if (!OP.NET || !OP.NET.isConnected || !OP.NET.isConnected()) return;
-
-        const inputState = OP.IN.getState();
-        seq++;
-        const dt = intervalMs / 1000;
-
-        // Du doan vi tri ngay tren may client
-        if (OP.PRED && OP.PRED.addInput) {
-          OP.PRED.addInput({
-            seq: seq,
-            mx: inputState.mx,
-            my: inputState.my,
-            aim: inputState.aim,
-            btn: inputState.btn,
-            sprint: inputState.sprint,
-            dt: dt
-          });
+      // Mat focus (alt-tab, click ra ngoai): tha het phim, tranh nhan vat tu chay mai
+      window.addEventListener('blur', function () {
+        keysDown.clear();
+        mouseButtons = 0;
+      });
+      document.addEventListener('visibilitychange', function () {
+        if (document.hidden) {
+          keysDown.clear();
+          mouseButtons = 0;
         }
+      });
 
-        OP.NET.send({
-          t: 'in',
-          seq: seq,
-          mx: inputState.mx,
-          my: inputState.my,
-          aim: inputState.aim,
-          btn: inputState.btn,
-          sprint: inputState.sprint
-        });
-      }, intervalMs);
+      // Input duoc lay va gui theo buoc co dinh trong OP.PRED.frame (09-predict.js)
+      initialized = true;
+    },
+
+    // Goc ngam tu than nhan vat toi chuot, trong toa do the gioi
+    // (nhan vat khong luon o tam man hinh: camera bi chan o mep map)
+    getAim: function () {
+      const me = OP.GAME && OP.GAME.state && OP.GAME.state.me;
+      if (me && OP.CAM && OP.CAM.screenToWorld) {
+        const mw = OP.CAM.screenToWorld(mouseScreenX, mouseScreenY);
+        return Math.atan2(mw.y - (me.y - 12), mw.x - me.x);
+      }
+      return Math.atan2(mouseScreenY - S.CONST.VIEW_H / 2, mouseScreenX - S.CONST.VIEW_W / 2);
     },
 
     getState: function () {
@@ -104,34 +94,19 @@
       if (keysDown.has('KeyA') || keysDown.has('ArrowLeft')) mx -= 1;
       if (keysDown.has('KeyD') || keysDown.has('ArrowRight')) mx += 1;
 
-      // Giu Shift de chay nhanh
-      const isShift = keysDown.has('ShiftLeft') || keysDown.has('ShiftRight');
-      const isSprint = isShift && (mx !== 0 || my !== 0);
-
-      // Tinh goc ngam tu vi tri nhan vat toi chuot trong toa do the gioi
-      // (nhan vat khong luon o tam man hinh: camera bi chan o mep map)
-      let aim = 0;
-      const me = OP.GAME && OP.GAME.state && OP.GAME.state.me;
-      if (me && OP.CAM && OP.CAM.screenToWorld) {
-        const mw = OP.CAM.screenToWorld(mouseScreenX, mouseScreenY);
-        aim = Math.atan2(mw.y - (me.y - 12), mw.x - me.x);
-      } else {
-        const viewW = (S.CONST && S.CONST.VIEW_W) || 480;
-        const viewH = (S.CONST && S.CONST.VIEW_H) || 270;
-        aim = Math.atan2(mouseScreenY - viewH / 2, mouseScreenX - viewW / 2);
+      // Bitmask nut bam theo S.BTN / S.KEYS (BIEN-CHUNG muc 8)
+      let btn = 0;
+      const BTN = S.BTN;
+      const KEYS = S.KEYS;
+      if (mouseButtons & 1) btn |= BTN.ATTACK;
+      if (mouseButtons & 2) btn |= BTN.BLOCK;
+      for (const name in BTN) {
+        if (name === 'ATTACK' || name === 'BLOCK') continue;
+        const code = KEYS[name];
+        if (typeof code === 'string' && keysDown.has(code)) btn |= BTN[name];
       }
 
-      // Bitmask nut bam
-      let btn = 0;
-      const BTN = S.BTN || {};
-      if (mouseButtons & 1) btn |= (BTN.ATTACK || 1);
-      if (mouseButtons & 2) btn |= (BTN.BLOCK || 2);
-      if (keysDown.has('KeyQ')) btn |= (BTN.Q || 4);
-      if (keysDown.has('KeyE')) btn |= (BTN.E || 8);
-      if (keysDown.has('KeyR')) btn |= (BTN.R || 16);
-      if (isSprint) btn |= (BTN.SPRINT || 32768);
-
-      return { mx, my, aim, btn, sprint: isSprint };
+      return { mx: mx, my: my, aim: OP.IN.getAim(), btn: btn };
     }
   };
 })();

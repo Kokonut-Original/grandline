@@ -299,6 +299,42 @@ html, body {
   margin-top: 2px;
 }
 
+/* Toast thong bao (07c) */
+#toast-wrap {
+  position: absolute;
+  top: 34px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  z-index: 50;
+  pointer-events: none;
+  font-family: 'VT323', monospace;
+}
+
+.toast {
+  background: rgba(22, 14, 34, 0.9);
+  border: 1px solid #4a3d63;
+  color: #f2ecff;
+  font-size: 12px;
+  line-height: 1.2;
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+
+.toast-warn {
+  border-color: #da3633;
+  color: #ffb3a8;
+}
+
+.toast-big {
+  font-size: 18px;
+  border-color: #f4c430;
+  color: #f4c430;
+}
+
 /* Teleport Menu & Dev Tools */
 #tp-container {
   position: absolute;
@@ -364,7 +400,9 @@ html, body {
   color: #f8fafc;
   font-family: 'VT323', monospace;
   font-size: 12px;
+  line-height: 1.25;
   padding: 2px 6px;
+  flex-shrink: 0;
   cursor: pointer;
   text-align: left;
   border-radius: 2px;

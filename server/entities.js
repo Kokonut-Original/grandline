@@ -36,7 +36,9 @@ function createPlayer(id, name, colors, x, y) {
     hp: CONST.HP_BASE || 100,
     hpMax: CONST.HP_BASE || 100,
     stamina: CONST.STAMINA_MAX || 100,
-    fruit: null,
+    water: 0,
+    onBoatId: null,
+    fruitId: null,
     alive: true
   };
 }

@@ -7,6 +7,7 @@
 require('../shared/00-namespace');
 require('../shared/01-constants');
 require('../shared/02-enums');
+require('../shared/05-rng');
 require('../shared/12-data-items');
 
 const S = globalThis.OP_SHARED;
@@ -15,6 +16,9 @@ const entities = require('./entities');
 class LootManager {
   constructor(world) {
     this.world = world;
+    // RNG co seed rieng cho loot (khong dung Math.random de tai hien duoc voi --seed)
+    const seed = (world && typeof world.seed === 'number') ? world.seed : 1;
+    this.rng = S.RNG.create((seed * 7919 + 101) >>> 0);
     this.chests = new Map(); // id -> chest entity
     this.items = new Map();  // id -> item entity
     this.rebirthTimers = [];
@@ -50,7 +54,7 @@ class LootManager {
     const droppedItems = [];
 
     for (let i = 0; i < dropCount; i++) {
-      const idx = rng ? Math.floor(rng.next() * pool.length) : Math.floor(Math.random() * pool.length);
+      const idx = Math.floor((rng || this.rng).next() * pool.length);
       const itemId = pool[idx];
 
       const offX = (i === 0) ? -12 : (i === 1 ? 12 : 0);
@@ -69,7 +73,7 @@ class LootManager {
 
     const delayMs = (S.CONST.FRUIT_REBIRTH_SEC || 20) * 1000;
     const timer = setTimeout(() => {
-      const spawn = this.world ? this.world.getRandomSpawn() : { x: 2560, y: 2560 };
+      const spawn = this.world ? this.world.getRandomSpawn(this.rng) : { x: 2560, y: 2560 };
       const itemEnt = entities.createItem(`fruit_${fruitId}`, spawn.x, spawn.y, 1);
       this.items.set(itemEnt.id, itemEnt);
 

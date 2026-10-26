@@ -1,6 +1,6 @@
 // server/world.js
 // Quan ly ban do server sinh tu shared/21-mapgen.js: tra cuu tile, va cham, trang thai nuoc va diem spawn.
-// Phu thuoc: shared/00 -> 05, shared/14-data-islands.js, shared/21-mapgen.js.
+// Phu thuoc: shared/00 -> 05, shared/14-data-islands.js, shared/21-mapgen.js, shared/22-move.js.
 
 'use strict';
 
@@ -10,6 +10,7 @@ require('../shared/02-enums');
 require('../shared/05-rng');
 require('../shared/14-data-islands');
 require('../shared/21-mapgen');
+require('../shared/22-move');
 
 const S = globalThis.OP_SHARED;
 const T = S.TILE;
@@ -48,10 +49,9 @@ class World {
     return S.WATER.LAND; // 0
   }
 
+  // Nuoc va va cham dung chung shared/22-move.js de server va client du doan khong bao gio lech nhau
   isWaterAtPixel(px, py) {
-    const tx = Math.floor(px / TILE_PX);
-    const ty = Math.floor(py / TILE_PX);
-    return this.isWater(tx, ty);
+    return S.MOVE.waterAt(this.map, px, py);
   }
 
   isBlocking(tx, ty) {
@@ -60,33 +60,35 @@ class World {
     return S.TILE_BLOCKING.indexOf(tile) !== -1;
   }
 
-  isBlockingAtPixel(px, py, radius = 6) {
-    const minTx = Math.floor((px - radius) / TILE_PX);
-    const maxTx = Math.floor((px + radius) / TILE_PX);
-    const minTy = Math.floor((py - radius) / TILE_PX);
-    const maxTy = Math.floor((py + radius) / TILE_PX);
-
-    for (let ty = minTy; ty <= maxTy; ty++) {
-      for (let tx = minTx; tx <= maxTx; tx++) {
-        if (this.isBlocking(tx, ty)) {
-          return true;
-        }
-      }
-    }
-    return false;
+  isBlockingAtPixel(px, py, radius = S.CONST.PLAYER_RADIUS) {
+    return S.MOVE.blockedAt(this.map, px, py, radius);
   }
 
   getSpawns() {
-    return this.map ? this.map.spawns : [];
+    return (this.map && this.map.spawns) || [];
   }
 
+  // Bat buoc truyen rng co seed de tai hien duoc voi --seed
   getRandomSpawn(rng) {
     const spawns = this.getSpawns();
     if (!spawns || spawns.length === 0) {
-      return { x: 160 * TILE_PX, y: 160 * TILE_PX };
+      return this.freeSpot(160 * TILE_PX, 160 * TILE_PX);
     }
-    const idx = rng ? Math.floor(rng.next() * spawns.length) : Math.floor(Math.random() * spawns.length);
-    return spawns[idx];
+    const s = spawns[Math.floor(rng.next() * spawns.length)];
+    return this.freeSpot(s.x, s.y);
+  }
+
+  // Diem spawn tam cua 1 dao (khong bi chan boi cay/nha)
+  getIslandSpawn(islandId) {
+    const spawns = this.getSpawns();
+    const s = spawns.find(sp => sp.islandId === islandId) || spawns[0];
+    if (!s) return this.freeSpot(160 * TILE_PX, 160 * TILE_PX);
+    return this.freeSpot(s.x, s.y);
+  }
+
+  // Diem dung khong bi chan gan (x, y)
+  freeSpot(x, y) {
+    return S.MOVE.findFreeSpot(this.map, x, y, 10);
   }
 
   getDocks() {

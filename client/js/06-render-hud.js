@@ -91,7 +91,7 @@
       drawBigMap(ctx, me, map);
     }
 
-    // 3. Ve thanh the luc (Duration Bar) o goc duoi
+    // 3. Ve thanh the luc o goc duoi
     if (me) {
       drawStaminaHud(ctx, me);
     }
@@ -287,7 +287,6 @@
 
   function drawStaminaHud(ctx, me) {
     const stamina = (me.stamina !== undefined) ? me.stamina : 100;
-    const isSprint = !!me.isSprinting;
     const pct = Math.max(0, Math.min(1, stamina / 100));
 
     const w = 120;
@@ -308,22 +307,13 @@
     // Thanh fill the luc
     if (pct > 0) {
       const fillW = Math.round((w - 2) * pct);
-      ctx.fillStyle = isSprint ? '#fbbf24' : (stamina <= 15 ? '#ef4444' : '#0284c7');
+      ctx.fillStyle = stamina <= 15 ? '#ef4444' : '#0284c7';
       ctx.fillRect(x + 1, y + 1, fillW, h - 2);
-
-      // Vet sang nhe tren dau thanh
-      if (isSprint) {
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
-        ctx.fillRect(x + 1, y + 1, fillW, 2);
-      }
     }
 
     // Chu hien thi 2 luot strokeText + fillText
-    let label = `THỂ LỰC [SHIFT]: ${Math.round(stamina)}%`;
-    if (stamina <= 5) label = 'KIỆT SỨC!';
-    else if (isSprint) label = `CHẠY NHANH: ${Math.round(stamina)}%`;
-
-    const txtColor = (stamina <= 5) ? '#ef4444' : (isSprint ? '#fef08a' : '#ffffff');
+    const label = (stamina <= 5) ? 'KIỆT SỨC!' : `THỂ LỰC: ${Math.round(stamina)}%`;
+    const txtColor = (stamina <= 5) ? '#ef4444' : '#ffffff';
     drawOutlinedText(ctx, label, x + w / 2, y + h / 2, 10, txtColor, '#160e22', 'center');
 
     ctx.restore();

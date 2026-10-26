@@ -31,7 +31,8 @@ onepiece-br/
 │   ├── 15-data-boats.js
 │   ├── 16-data-zone.js
 │   ├── 20-rules-damage.js    hàm tính hệ số thuần (không có side effect), dùng cho test + tooltip
-│   └── 21-mapgen.js          sinh map từ seed, cho kết quả giống hệt nhau ở cả 2 phía
+│   ├── 21-mapgen.js          sinh map từ seed, cho kết quả giống hệt nhau ở cả 2 phía
+│   └── 22-move.js            S.MOVE: công thức di chuyển dùng chung server + client dự đoán
 │
 ├── server/
 │   ├── server.js             entry: đọc cờ, HTTP phát file tĩnh (client/, shared/), WS, in IP
@@ -114,7 +115,7 @@ onepiece-br/
 
 1. `/shared/00` → `05`
 2. `/shared/10` → `16`
-3. `/shared/20`, `/shared/21`
+3. `/shared/20`, `/shared/21`, `/shared/22`
 4. `/client/js/00` → `10`, theo đúng thứ tự tên file ở trên
 
 `check_static.py` kiểm tra thứ tự này.
@@ -127,7 +128,7 @@ onepiece-br/
 |---|---|
 | Màn trắng / không vào được | Overlay lỗi (00-boot), console trình duyệt, thứ tự script |
 | Không kết nối được | server.js (in IP), firewall, net.js, 01-net.js |
-| Người chơi giật, kéo ngược | 09-predict.js, snapshot.js, dòng `perf` trong log |
+| Người chơi giật, kéo ngược | 22-move.js (phải giống hệt 2 phía), 09-predict.js, hàng đợi input trong match.js, `move.test.js`, dòng `perf` trong log |
 | Sát thương sai | combat.js (pipeline), 20-rules-damage.js, test damage |
 | Trái lỗi | server/fruits/<id>.js, 10-data-fruits.js, 05c-render-fx.js |
 | Map khác nhau giữa 2 máy | 21-mapgen.js, 05-rng.js (cấm dùng Math.random trong mapgen) |

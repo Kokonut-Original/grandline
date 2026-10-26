@@ -25,6 +25,7 @@ EXPECTED_SCRIPTS = [
     '/shared/16-data-zone.js',
     '/shared/20-rules-damage.js',
     '/shared/21-mapgen.js',
+    '/shared/22-move.js',
     '/client/js/00-boot.js',
     '/client/js/01-net.js',
     '/client/js/02a-pixel-core.js',
@@ -54,7 +55,24 @@ FORBIDDEN_PATTERNS = [
     (r'\bimport\s+[\w*{]', 'Tu khoa import khong duoc phep'),
     (r'\bexport\s+(default|const|let|var|function|class|\{)', 'Tu khoa export khong duoc phep'),
     (r'\bfetch\s*\(', 'Khong duoc dung fetch() phia client/shared'),
-    (r'https?://(?:cdn|unpkg|cdnjs|jsdelivr)', 'Khong duoc dung CDN ngoai')
+    (r'\bimport\s*\(', 'Khong duoc dung import() dong'),
+    (r'\bXMLHttpRequest\b', 'Khong duoc tai tai nguyen ngoai bang XMLHttpRequest')
+]
+
+# Quet tren dong GOC (truoc khi bo comment), vi "https://" chua "//" se bi tuong nham la comment
+RAW_PATTERNS = [
+    (r'https?://(?:[\w.-]*\.)?(?:cdn|unpkg|cdnjs|jsdelivr|googleapis|gstatic)', 'Khong duoc dung CDN / tai nguyen ngoai')
+]
+
+# Luat rieng theo thu muc
+CLIENT_PATTERNS = [
+    (r'\brequire\s*\(', 'Khong duoc dung require() trong client'),
+    (r'\.(?:innerHTML|outerHTML)\s*[+]?=', 'Khong duoc gan innerHTML/outerHTML (dung textContent)'),
+    (r'\binsertAdjacentHTML\s*\(', 'Khong duoc dung insertAdjacentHTML (dung textContent)')
+]
+SHARED_PATTERNS = [
+    (r'\brequire\s*\(', 'Khong duoc dung require() trong shared'),
+    (r'\bMath\.random\s*\(', 'Khong duoc dung Math.random trong shared (phai tat dinh theo seed)')
 ]
 
 def check_forbidden_tokens():
@@ -73,18 +91,32 @@ def check_forbidden_tokens():
                 with open(file_path, 'r', encoding='utf-8') as f:
                     content = f.read()
 
-                # Bo qua comment de kiem tra chinh xac hon
-                # Loai bo block comment /* ... */ va line comment // ...
-                cleaned = re.sub(r'/\*.*?\*/', '', content, flags=re.DOTALL)
-                lines = cleaned.split('\n')
-                for idx, line in enumerate(lines, 1):
+                for idx, raw_line in enumerate(content.split('\n'), 1):
+                    for pattern, msg in RAW_PATTERNS:
+                        if re.search(pattern, raw_line):
+                            errors.append(f"[{rel_path}:{idx}] {msg}: '{raw_line.strip()}'")
+
+                # Bo comment de kiem tra chinh xac hon. Block comment thay bang so dong trong
+                # tuong ung de so dong bao loi van dung voi file goc.
+                cleaned = re.sub(r'/\*.*?\*/', lambda m: '\n' * m.group(0).count('\n'), content, flags=re.DOTALL)
+                extra = CLIENT_PATTERNS if s_dir == 'client' else SHARED_PATTERNS
+                for idx, line in enumerate(cleaned.split('\n'), 1):
                     code_part = line.split('//')[0]
-                    for pattern, msg in FORBIDDEN_PATTERNS:
+                    for pattern, msg in FORBIDDEN_PATTERNS + extra:
                         if re.search(pattern, code_part):
                             errors.append(f"[{rel_path}:{idx}] {msg}: '{code_part.strip()}'")
 
-                    if s_dir == 'client' and re.search(r'\brequire\s*\(', code_part):
-                        errors.append(f"[{rel_path}:{idx}] Khong duoc dung require() trong client: '{code_part.strip()}'")
+    # index.html va style.css: khong nap script/stylesheet/font tu ngoai
+    for rel in ['client/index.html', 'client/style.css']:
+        path = os.path.join(ROOT_DIR, *rel.split('/'))
+        if not os.path.exists(path):
+            continue
+        with open(path, 'r', encoding='utf-8') as f:
+            for idx, raw_line in enumerate(f.read().split('\n'), 1):
+                if re.search(r'(?:src|href)\s*=\s*["\']?\s*(?:https?:)?//', raw_line) or \
+                        re.search(r'url\(\s*["\']?\s*(?:https?:)?//', raw_line) or \
+                        re.search(r'@import', raw_line):
+                    errors.append(f"[{rel}:{idx}] Khong duoc nap tai nguyen ngoai: '{raw_line.strip()}'")
 
     return errors
 
@@ -152,7 +184,7 @@ def check_node_syntax():
                     continue
                 file_path = os.path.join(root, file)
                 rel_path = os.path.relpath(file_path, ROOT_DIR)
-                res = subprocess.run(['node', '--check', file_path], capture_output=True, text=True)
+                res = subprocess.run(['node', '--check', file_path], capture_output=True, text=True, encoding='utf-8', errors='replace')
                 if res.returncode != 0:
                     errors.append(f"[{rel_path}] node --check bao loi:\n{res.stderr.strip()}")
 

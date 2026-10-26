@@ -1,6 +1,6 @@
 # TIẾN ĐỘ & KẾ HOẠCH
 
-## TASK HIỆN TẠI: M03B-T01e
+## TASK HIỆN TẠI: M03B-T01f
 
 ## Quyết định đã chốt
 
@@ -17,6 +17,11 @@
 
 | ID | Task | Mô tả | Trạng thái |
 |---|---|---|---|
+| B01 | M01-T04 | Reconnect nhân đôi nhân vật, chạy gấp đôi | Đã sửa M03B-T01e |
+| B02 | M03B-T01c | Lệnh `tp` chạy được khi không `--dev`, `/tp __proto__` làm tọa độ NaN | Đã sửa M03B-T01e |
+| B03 | M00-T01 | Đọc được file ngoài `client/`, `shared/` (kể cả `.git`) | Đã sửa M03B-T01e |
+| B04 | M03-T01 | Seed 2: pháo đài bị tường bao kín, không có lối ra | Mở, sửa ở M03B-T01f |
+| B05 | M01-T01 | `botMix` không đặt được giá trị 0 | Mở |
 
 ---
 
@@ -92,7 +97,7 @@
 - [x] **T01d Hiển thị pixel chuẩn**
   - Mục tiêu: bỏ tầm nhìn 1.5x (scale lẻ), giữ VIEW 480×270 cố định, phóng to theo số nguyên pixel thiết bị (có tính dpr), uiCanvas vẽ ở độ phân giải thật, UI DOM to theo game, tia ngắm chỉ hiện khi F3.
   - Xong khi: run_all PASS; toàn màn hình mọi dpr pixel đều nhau, không lưới mờ giữa chunk, chữ HUD nét.
-- [ ] **T01e Di chuyển chuẩn**
+- [x] **T01e Di chuyển chuẩn**
   - Mục tiêu: bỏ chạy nhanh (Shift về Lục Thức ô 1), `shared/22-move.js` dùng chung server/client, server xếp hàng input theo seq, nội suy hiển thị, camera theo dt, sửa reconnect nhân đôi, khóa `tp` sau `--dev`.
   - Xong khi: run_all PASS; test input dồn gói vẫn đi đúng quãng đường; đi vào cây/nước không bị kéo ngược.
 - [ ] **T01f Chiều sâu đảo và nước**
@@ -213,3 +218,4 @@ Mỗi task trái phải có: data đầy đủ, server logic, hiệu ứng clien
 | M03B-T01b | reports/M03B-T01b.md | 2026-10-26 |
 | M03B-T01c | reports/M03B-T01c.md | 2026-10-26 |
 | M03B-T01d | reports/M03B-T01d.md | 2026-10-26 |
+| M03B-T01e | reports/M03B-T01e.md | 2026-10-26 |

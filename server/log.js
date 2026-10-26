@@ -53,7 +53,17 @@ const logger = {
   warn: (tag, msg, data) => writeLog('WARN', tag, msg, data),
   error: (tag, msg, data) => writeLog('ERROR', tag, msg, data),
   dbg: (tag, msg, data) => writeLog('DBG', tag, msg, data),
-  perf: (data) => writeLog('INFO', 'perf', 'Chi so hieu nang server', data)
+  perf: (data) => writeLog('INFO', 'perf', 'Chi so hieu nang server', data),
+  // Ghi dong bo (khong qua stream) vi process sap thoat, stream chua kip ghi se mat log
+  fatal: (tag, msg, data = {}) => {
+    const entry = { ts: new Date().toISOString(), lvl: 'ERROR', tag: tag, msg: msg, data: data };
+    try {
+      fs.appendFileSync(currentLogPath, JSON.stringify(entry) + '\n');
+    } catch (e) {
+      // Khong ghi duoc file thi van in ra console ben duoi
+    }
+    console.error(`[${entry.ts}] [ERROR] [${tag}] ${msg}`, Object.keys(data).length > 0 ? data : '');
+  }
 };
 
 module.exports = logger;

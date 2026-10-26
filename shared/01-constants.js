@@ -24,6 +24,11 @@
     MAX_PLAYERS: 32,
     RECONNECT_SEC: 30,
     INPUT_MAX_PER_SEC: 60,
+    INPUT_QUEUE_MAX: 10,
+    INPUT_BURST: 6,
+    MSG_MAX_BYTES: 16384,
+    MSG_MAX_PER_SEC: 120,
+    CHAT_MAX_PER_SEC: 2,
 
     // Chi so nguoi choi
     HP_BASE: 100,
@@ -40,6 +45,14 @@
     SHALLOW_MULT: 0.8,
     DROWN_PCT_PER_SEC: 0.17,
     SWIM_STAMINA_COST: 6,
+    SINK_MULT: 0.2,
+    SWIM_EXHAUST_DPS: 5,
+    SHALLOW_STAMINA_REGEN: 5,
+
+    // Dia hinh dac biet (he so quan tinh tinh theo moi buoc 1/TICK_HZ)
+    QUICKSAND_MULT: 0.5,
+    ICE_KEEP: 0.94,
+    ICE_ACCEL: 0.08,
 
     // Inventory
     BAG_SLOTS: 6,

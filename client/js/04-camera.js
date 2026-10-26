@@ -53,13 +53,14 @@
       }
     },
 
-    // Goc tren trai cua khung nhin, lam tron de moi thu ve dung luoi pixel
+    // Goc tren trai cua khung nhin. Lam tron TAM camera (giong cach 05b lam tron vi tri nhan vat)
+    // de nhan vat camera dang bam luon dung yen o giua man hinh, khong rung 1px.
     offsetX: function () {
-      return Math.round(this.w / 2 - this.x);
+      return Math.floor(this.w / 2) - Math.round(this.x);
     },
 
     offsetY: function () {
-      return Math.round(this.h / 2 - this.y);
+      return Math.floor(this.h / 2) - Math.round(this.y);
     },
 
     worldToScreen: function (wx, wy) {

@@ -27,6 +27,7 @@
       ents: new Map(),
       zone: null,
       phase: 'LOBBY',
+      dev: false,
       seed: null,
       map: null,
       lastTick: 0
@@ -49,6 +50,9 @@
       // Lang nghe message tu server
       if (OP.NET && OP.NET.on) {
         OP.NET.on('welcome', function (msg) {
+          // Vao moi hoac reconnect: server dem seq input lai tu dau
+          if (OP.PRED && OP.PRED.reset) OP.PRED.reset();
+          OP.GAME.state.dev = !!(msg && msg.dev);
           if (msg && msg.seed !== undefined) {
             OP.GAME.state.seed = msg.seed;
             const S = OP.S || window.OP_SHARED;
@@ -100,14 +104,15 @@
     render: function () {
       if (!worldCtx) return;
 
-      // Cap nhat noi suy thuc the
-      if (OP.PRED && OP.PRED.update) {
+      // Du doan + gui input theo buoc co dinh, roi noi suy cac thuc the khac
+      if (OP.PRED) {
+        OP.PRED.frame(performance.now());
         OP.PRED.update();
       }
 
-      // Cap nhat camera theo nguoi choi
+      // Camera bam thang vi tri hien thi (da noi suy muot), khong lerp de tranh truot/rung pixel
       if (OP.GAME.state.me && OP.CAM && OP.CAM.follow) {
-        OP.CAM.follow(OP.GAME.state.me.x, OP.GAME.state.me.y, 0.15);
+        OP.CAM.follow(OP.GAME.state.me.x, OP.GAME.state.me.y, 1);
       }
 
       // Kiem tra dpr thay doi (keo cua so sang man hinh khac, zoom trinh duyet)

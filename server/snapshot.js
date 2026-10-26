@@ -17,18 +17,22 @@ function isInAOI(px, py, ex, ey, radius) {
   return (dx * dx + dy * dy) <= (r * r);
 }
 
+// Trang thai cua chinh nguoi choi. x, y, vx, vy gui nguyen do chinh xac de client chay lai
+// cac input chua ack bang shared/22-move.js ra dung y het server (khong bi keo nguoc).
 function packPlayerMe(p) {
   return {
     id: p.id,
-    x: Math.round(p.x * 10) / 10,
-    y: Math.round(p.y * 10) / 10,
-    vx: Math.round(p.vx * 10) / 10,
-    vy: Math.round(p.vy * 10) / 10,
+    x: p.x,
+    y: p.y,
+    vx: p.vx,
+    vy: p.vy,
     aim: Math.round(p.aim * 100) / 100,
-    hp: p.hp,
+    hp: Math.ceil(p.hp),
     hm: p.hpMax,
     stamina: p.stamina !== undefined ? Math.round(p.stamina) : 100,
-    sprint: !!p.isSprinting,
+    water: p.water || 0,
+    fruitId: p.fruitId || null,
+    onBoatId: (p.onBoatId === undefined) ? null : p.onBoatId,
     name: p.name,
     colors: p.colors
   };

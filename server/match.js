@@ -1,6 +1,9 @@
 // server/match.js
-// May trang thai tran dau, vong tick 30Hz, AOI snapshot 20Hz, giu nhan vat 30s khi rot mang va log perf.
-// Phu thuoc: shared/01-constants.js, shared/02-enums.js, shared/03-protocol.js, server/snapshot.js, server/log.js.
+// May trang thai tran dau, vong tick 30Hz (bo tich luy thoi gian), hang doi input theo seq,
+// AOI snapshot 20Hz, giu nhan vat 30s khi rot mang, lenh dev va log perf.
+// Phu thuoc: shared/01-constants.js, shared/02-enums.js, shared/03-protocol.js, shared/05-rng.js,
+//            shared/14-data-islands.js, server/snapshot.js, server/log.js, server/world.js,
+//            server/physics.js, server/devcmd.js, server/net.js (ham lam sach du lieu).
 
 'use strict';
 
@@ -8,13 +11,17 @@ require('../shared/00-namespace.js');
 require('../shared/01-constants.js');
 require('../shared/02-enums.js');
 require('../shared/03-protocol.js');
+require('../shared/05-rng.js');
 require('../shared/14-data-islands.js');
 
 const S = globalThis.OP_SHARED;
+const C = S.CONST;
 const { packSnapshot } = require('./snapshot.js');
 const logger = require('./log.js');
 const World = require('./world.js');
 const physics = require('./physics.js');
+const devcmd = require('./devcmd.js');
+const NetManager = require('./net.js');
 
 class MatchManager {
   constructor(flags = {}) {
@@ -22,25 +29,22 @@ class MatchManager {
     this.phase = S.PHASE.LOBBY;
     this.seed = flags.seed !== null && flags.seed !== undefined ? flags.seed : 1;
     this.world = new World(this.seed);
-    this.players = new Map(); // id -> player object
+    this.rng = S.RNG.create((this.seed * 31 + 7) >>> 0);
+    this.players = new Map(); // player.id -> player (moi nhan vat dung 1 key duy nhat)
     this.hostId = null;
 
-    this.botsCount = (typeof flags.bots === 'number') ? flags.bots : (S.CONST.MAX_PLAYERS - 1);
-    this.botMix = {
-      easy: 0.4,
-      normal: 0.4,
-      hard: 0.2
-    };
+    this.botsCount = (typeof flags.bots === 'number') ? flags.bots : (C.MAX_PLAYERS - 1);
+    this.botMix = { easy: 0.4, normal: 0.4, hard: 0.2 };
 
     this.net = null;
     this.currentTick = 0;
     this.tickInterval = null;
     this.snapInterval = null;
     this.perfInterval = null;
+    this.dt = 1 / C.TICK_HZ;
+    this.accMs = 0;
+    this.lastLoopT = 0;
 
-    this.dt = 1 / S.CONST.TICK_HZ;
-
-    // Chi so hieu nang perf
     this.tickTimes = [];
     this.maxTickMs = 0;
   }
@@ -52,63 +56,89 @@ class MatchManager {
   startLoop() {
     if (this.tickInterval) return;
 
-    // Vong tick 30Hz
-    const tickMs = Math.floor(1000 / S.CONST.TICK_HZ);
+    // Bo tich luy: setInterval cua Node lech vai ms, nen cong don thoi gian that
+    // va chay du so tick de trung binh dung TICK_HZ (khop nhip 30 input/giay cua client)
+    const tickMs = 1000 / C.TICK_HZ;
+    this.lastLoopT = performance.now();
     this.tickInterval = setInterval(() => {
-      const t0 = performance.now();
-      this.tick(this.dt);
-      const elapsed = performance.now() - t0;
-      this.tickTimes.push(elapsed);
-      if (elapsed > this.maxTickMs) this.maxTickMs = elapsed;
-    }, tickMs);
+      const now = performance.now();
+      this.accMs += Math.min(250, now - this.lastLoopT);
+      this.lastLoopT = now;
+      let n = 0;
+      while (this.accMs >= tickMs && n < 5) {
+        this.accMs -= tickMs;
+        this.safeTick();
+        n++;
+      }
+      if (n >= 5) this.accMs = 0;
+    }, 5);
 
-    // Vong snapshot 20Hz
-    const snapMs = Math.floor(1000 / S.CONST.SNAP_HZ);
     this.snapInterval = setInterval(() => {
-      this.broadcastSnapshot();
-    }, snapMs);
+      try {
+        this.broadcastSnapshot();
+      } catch (e) {
+        logger.error('match', 'Loi khi gui snapshot', { err: String(e && e.stack || e) });
+      }
+    }, Math.floor(1000 / C.SNAP_HZ));
 
     // Ghi log perf moi 10 giay
     this.perfInterval = setInterval(() => {
       if (this.tickTimes.length === 0) return;
       const sum = this.tickTimes.reduce((a, b) => a + b, 0);
-      const avg = Math.round((sum / this.tickTimes.length) * 100) / 100;
-      const max = Math.round(this.maxTickMs * 100) / 100;
-
       logger.perf({
-        tickAvgMs: avg,
-        tickMaxMs: max,
+        tickAvgMs: Math.round((sum / this.tickTimes.length) * 100) / 100,
+        tickMaxMs: Math.round(this.maxTickMs * 100) / 100,
         entityCount: this.players.size,
         clientCount: this.net ? this.net.clients.size : 0
       });
-
       this.tickTimes = [];
       this.maxTickMs = 0;
     }, 10000);
   }
 
   stopLoop() {
-    if (this.tickInterval) {
-      clearInterval(this.tickInterval);
-      this.tickInterval = null;
+    for (const k of ['tickInterval', 'snapInterval', 'perfInterval']) {
+      if (this[k]) {
+        clearInterval(this[k]);
+        this[k] = null;
+      }
     }
-    if (this.snapInterval) {
-      clearInterval(this.snapInterval);
-      this.snapInterval = null;
+  }
+
+  // Loi trong 1 tick chi ghi log, khong lam sap ca tran
+  safeTick() {
+    const t0 = performance.now();
+    try {
+      this.tick(this.dt);
+    } catch (e) {
+      logger.error('match', 'Loi trong tick', { tick: this.currentTick, err: String(e && e.stack || e) });
     }
-    if (this.perfInterval) {
-      clearInterval(this.perfInterval);
-      this.perfInterval = null;
-    }
+    const elapsed = performance.now() - t0;
+    this.tickTimes.push(elapsed);
+    if (elapsed > this.maxTickMs) this.maxTickMs = elapsed;
   }
 
   tick(dt) {
     this.currentTick++;
+    const safe = (this.phase === S.PHASE.LOBBY);
+    for (const p of this.players.values()) {
+      if (p.disconnectedAt) continue;
+      this.processInputs(p);
+      physics.tickEnv(p, this.world, dt, { safe: safe });
+    }
+  }
 
-    const isLobby = (this.phase === S.PHASE.LOBBY);
-    for (const player of this.players.values()) {
-      player.inLobby = isLobby;
-      physics.tickPlayer(player, this.world, dt);
+  // Moi tick duoc 1 luot di chuyen, tich toi da INPUT_BURST luot de bu goi tin den don cuc.
+  // Trung binh khong qua TICK_HZ buoc/giay nen khong the gui nhieu input de chay nhanh hon.
+  processInputs(p) {
+    p.moveBudget = Math.min(C.INPUT_BURST, p.moveBudget + 1);
+    while (p.inputQueue.length > 0 && p.moveBudget >= 1) {
+      const cmd = p.inputQueue.shift();
+      physics.applyInput(p, cmd, this.world);
+      p.aim = cmd.aim;
+      p.btn = cmd.btn;
+      p.lastInputSeq = cmd.seq;
+      p.moveBudget -= 1;
     }
   }
 
@@ -123,212 +153,224 @@ class MatchManager {
         x: Math.round(p.x * 10) / 10,
         y: Math.round(p.y * 10) / 10,
         a: Math.round(p.aim * 100) / 100,
-        hp: p.hp,
+        hp: Math.ceil(p.hp),
         hm: p.hpMax,
         n: p.name,
-        c: p.colors
+        c: p.colors,
+        wa: p.water
       });
     }
 
     for (const player of this.players.values()) {
       if (!player.client || player.disconnectedAt) continue;
-
-      // Dong goi snapshot loc theo AOI (560px)
-      const snapMsg = packSnapshot(player, allEnts, this.currentTick, null, [], S.CONST.AOI_RADIUS);
+      const snapMsg = packSnapshot(player, allEnts, this.currentTick, null, [], C.AOI_RADIUS);
       this.net.send(player.client, snapMsg);
     }
   }
 
-  onClientConnect(client) {
-    if (this.hostId === null || client.isLocal) {
-      if (this.hostId === null) {
-        this.hostId = client.id;
-      }
+  playerOf(client) {
+    if (!client) return null;
+    const id = (client.playerId !== undefined) ? client.playerId : client.id;
+    return this.players.get(id) || null;
+  }
+
+  setHost(id) {
+    this.hostId = id;
+    for (const p of this.players.values()) {
+      p.isHost = (p.id === id);
     }
+  }
 
-    const isHost = (this.hostId === client.id);
-    const defaultName = `Hai tac #${client.id}`;
+  // Chuyen host cho nguoi dang ket noi dau tien neu host hien tai roi di
+  passHostFrom(id) {
+    if (this.hostId !== id) return;
+    const next = Array.from(this.players.values()).find(p => !p.disconnectedAt && p.id !== id);
+    this.setHost(next ? next.id : null);
+  }
 
-    const player = {
+  createPlayer(client) {
+    const spot = this.world.getIslandSpawn('fortress');
+    return {
       id: client.id,
+      kind: 'PLAYER',
       reconnectKey: client.reconnectKey,
-      name: defaultName,
+      name: `Hai tac #${client.id}`,
       colors: { hat: '#d9534f', shirt: '#337ab7', hair: '#292b2c' },
-      isHost: isHost,
+      isHost: false,
       client: client,
       joined: false,
       disconnectedAt: null,
       disconnectTimer: null,
 
-      x: 240,
-      y: 135,
+      x: spot.x,
+      y: spot.y,
       vx: 0,
       vy: 0,
       aim: 0,
-      hp: S.CONST.HP_BASE,
-      hpMax: S.CONST.HP_BASE,
-      stamina: S.CONST.STAMINA_MAX,
+      btn: 0,
+      alive: true,
+      hp: C.HP_BASE,
+      hpMax: C.HP_BASE,
+      stamina: C.STAMINA_MAX,
+      water: S.WATER.LAND,
+      onBoatId: null,
+      fruitId: null,
+
+      inputQueue: [],
+      lastQueuedSeq: 0,
       lastInputSeq: 0,
-      currentInput: { mx: 0, my: 0, aim: 0, btn: 0 }
+      moveBudget: C.INPUT_BURST,
+      lastChatAt: 0
     };
+  }
 
-    this.players.set(client.id, player);
-
+  sendWelcome(client, player) {
     this.net.send(client, {
       t: S.MSG.WELCOME,
-      you: client.id,
+      you: player.id,
       seed: this.seed,
-      isHost: isHost,
-      reconnectKey: client.reconnectKey,
+      isHost: (this.hostId === player.id),
+      reconnectKey: player.reconnectKey,
       cfgHash: 'init_cfg',
       dev: !!this.flags.dev
     });
+    // Client vao giua chung can biet dang o phase nao (an/hien lobby)
+    this.net.send(client, { t: S.MSG.PHASE, phase: this.phase, t0: Date.now(), data: {} });
+  }
 
+  onClientConnect(client) {
+    client.playerId = client.id;
+    const player = this.createPlayer(client);
+    this.players.set(player.id, player);
+    if (this.hostId === null) this.setHost(player.id);
+    else player.isHost = false;
+
+    this.sendWelcome(client, player);
     this.broadcastLobby();
   }
 
   onClientDisconnect(client) {
-    const player = this.players.get(client.id);
-    if (!player) return;
+    const player = this.playerOf(client);
+    // Socket cu dong sau khi nguoi choi da reconnect bang socket moi: bo qua
+    if (!player || player.client !== client) return;
 
-    // Giu nhan vat trong vong RECONNECT_SEC (30 giay) khi rot mang
     player.disconnectedAt = Date.now();
     player.client = null;
+    player.inputQueue.length = 0;
+    logger.info('match', `Player #${player.id} tam ngat ket noi, cho ${C.RECONNECT_SEC}s de reconnect...`, { id: player.id });
 
-    logger.info('match', `Player #${player.id} tam ngat ket noi, cho 30s de reconnect...`, { id: player.id });
-
-    // Hen gio 30s de xoa han neu khong vao lai
-    const reconnectTimeoutMs = (S.CONST.RECONNECT_SEC || 30) * 1000;
     player.disconnectTimer = setTimeout(() => {
-      if (player.disconnectedAt) {
-        this.players.delete(player.id);
-        logger.info('match', `Player #${player.id} da het thoi gian reconnect (30s) -> xoa nhan vat.`);
+      if (!player.disconnectedAt) return;
+      this.players.delete(player.id);
+      logger.info('match', `Player #${player.id} het thoi gian reconnect -> xoa nhan vat.`);
+      this.passHostFrom(player.id);
+      this.broadcastLobby();
+    }, C.RECONNECT_SEC * 1000);
 
-        if (this.hostId === player.id) {
-          const remaining = Array.from(this.players.values()).filter(p => !p.disconnectedAt);
-          if (remaining.length > 0) {
-            this.hostId = remaining[0].id;
-            remaining[0].isHost = true;
-          } else {
-            this.hostId = null;
-          }
-        }
-        this.broadcastLobby();
-      }
-    }, reconnectTimeoutMs);
-
-    // Chuyen quyen host tam thoi neu can
-    if (this.hostId === player.id) {
-      const remaining = Array.from(this.players.values()).filter(p => !p.disconnectedAt);
-      if (remaining.length > 0) {
-        this.hostId = remaining[0].id;
-        remaining[0].isHost = true;
-      }
-    }
-
+    this.passHostFrom(player.id);
     this.broadcastLobby();
   }
 
-  onClientMessage(client, msg) {
-    let player = this.players.get(client.id);
-
-    // Kiem tra reconnectKey neu message la join
-    if (msg.t === S.MSG.JOIN && msg.reconnectKey) {
-      for (const existingPlayer of this.players.values()) {
-        if (existingPlayer.reconnectKey === msg.reconnectKey && existingPlayer.disconnectedAt) {
-          // Huy bo timer xoa
-          if (existingPlayer.disconnectTimer) {
-            clearTimeout(existingPlayer.disconnectTimer);
-            existingPlayer.disconnectTimer = null;
-          }
-
-          // Xoa client tam cu
-          this.players.delete(client.id);
-
-          // Gan client moi vao nhan vat cu
-          existingPlayer.client = client;
-          existingPlayer.disconnectedAt = null;
-          this.players.set(client.id, existingPlayer);
-          player = existingPlayer;
-
-          logger.info('match', `Player #${existingPlayer.id} reconnect thanh cong!`, { id: existingPlayer.id });
-
-          this.net.send(client, {
-            t: S.MSG.WELCOME,
-            you: existingPlayer.id,
-            seed: this.seed,
-            isHost: (this.hostId === existingPlayer.id),
-            reconnectKey: existingPlayer.reconnectKey,
-            cfgHash: 'init_cfg',
-            dev: !!this.flags.dev
-          });
-
-          this.broadcastLobby();
-          return;
-        }
+  // Gan socket moi vao nhan vat cu (cung reconnectKey). Tra ve true neu thanh cong.
+  tryReconnect(client, key) {
+    let existing = null;
+    for (const p of this.players.values()) {
+      if (p.reconnectKey === key && p.disconnectedAt) {
+        existing = p;
+        break;
       }
     }
+    if (!existing) return false;
 
-    if (!player) return;
+    if (existing.disconnectTimer) {
+      clearTimeout(existing.disconnectTimer);
+      existing.disconnectTimer = null;
+    }
+
+    // Bo nhan vat tam vua tao cho socket moi
+    const temp = this.playerOf(client);
+    if (temp && temp !== existing) {
+      this.players.delete(temp.id);
+      if (this.hostId === temp.id) this.setHost(existing.id);
+    }
+
+    client.playerId = existing.id;
+    existing.client = client;
+    existing.disconnectedAt = null;
+    // Client moi dem seq lai tu 1
+    existing.inputQueue.length = 0;
+    existing.lastQueuedSeq = 0;
+    existing.lastInputSeq = 0;
+    if (this.hostId === null) this.setHost(existing.id);
+
+    logger.info('match', `Player #${existing.id} reconnect thanh cong!`, { id: existing.id });
+    this.sendWelcome(client, existing);
+    this.broadcastLobby();
+    return true;
+  }
+
+  onClientMessage(client, msg) {
+    if (msg.t === S.MSG.JOIN && typeof msg.reconnectKey === 'string' && this.tryReconnect(client, msg.reconnectKey)) {
+      return;
+    }
+
+    const player = this.playerOf(client);
+    if (!player || player.client !== client) return;
 
     switch (msg.t) {
       case S.MSG.JOIN:
         this.handleJoin(player, msg);
         break;
-
       case S.MSG.IN:
         this.handleInput(player, msg);
         break;
-
       case S.MSG.CFG:
         this.handleCfg(player, msg);
         break;
-
       case S.MSG.START:
         this.handleStart(player);
         break;
-
       case S.MSG.CHAT:
         this.handleChat(player, msg);
         break;
-
-      case 'tp':
-        this.handleTeleport(player, msg);
+      case S.MSG.ACT:
+        this.handleAct(player, msg);
         break;
-
       case S.MSG.PING:
-        this.net.send(client, {
-          t: S.MSG.PONG,
-          c: msg.c || 0,
-          s: Date.now()
-        });
+        this.net.send(client, { t: S.MSG.PONG, c: Number(msg.c) || 0, s: Date.now() });
         break;
     }
   }
 
   handleInput(player, msg) {
-    player.lastInputSeq = typeof msg.seq === 'number' ? msg.seq : player.lastInputSeq;
+    const seq = Number(msg.seq);
+    // Bo goi trung hoac cu (seq phai tang dan)
+    if (!Number.isInteger(seq) || seq <= player.lastQueuedSeq) return;
+    player.lastQueuedSeq = seq;
 
-    let mx = Number(msg.mx) || 0;
-    let my = Number(msg.my) || 0;
-    let aim = Number(msg.aim) || 0;
-    let btn = Number(msg.btn) || 0;
-
-    mx = Math.max(-1, Math.min(1, mx));
-    my = Math.max(-1, Math.min(1, my));
-
-    player.currentInput = { mx, my, aim, btn };
+    const aim = Number(msg.aim);
+    const btn = Number(msg.btn);
+    player.inputQueue.push({
+      seq: seq,
+      mx: msg.mx,
+      my: msg.my,
+      aim: Number.isFinite(aim) ? aim : 0,
+      btn: Number.isInteger(btn) && btn > 0 ? (btn & 0xffff) : 0
+    });
+    // Client gui nhanh hon server xu ly qua lau: bo lenh cu nhat (client se duoc sua sai)
+    while (player.inputQueue.length > C.INPUT_QUEUE_MAX) {
+      player.inputQueue.shift();
+    }
   }
 
   handleJoin(player, msg) {
-    if (typeof msg.name === 'string' && msg.name.trim().length > 0) {
-      player.name = msg.name.trim().slice(0, 24);
-    }
+    const name = NetManager.cleanText(msg.name, 24);
+    if (name) player.name = name;
     if (msg.colors && typeof msg.colors === 'object') {
       player.colors = {
-        hat: typeof msg.colors.hat === 'string' ? msg.colors.hat : player.colors.hat,
-        shirt: typeof msg.colors.shirt === 'string' ? msg.colors.shirt : player.colors.shirt,
-        hair: typeof msg.colors.hair === 'string' ? msg.colors.hair : player.colors.hair
+        hat: NetManager.cleanColor(msg.colors.hat, player.colors.hat),
+        shirt: NetManager.cleanColor(msg.colors.shirt, player.colors.shirt),
+        hair: NetManager.cleanColor(msg.colors.hair, player.colors.hair)
       };
     }
     player.joined = true;
@@ -336,10 +378,10 @@ class MatchManager {
   }
 
   handleCfg(player, msg) {
-    if (!player.isHost) return;
+    if (this.hostId !== player.id) return;
 
-    if (typeof msg.bots === 'number') {
-      this.botsCount = Math.max(0, Math.min(S.CONST.MAX_PLAYERS - 1, Math.floor(msg.bots)));
+    if (typeof msg.bots === 'number' && Number.isFinite(msg.bots)) {
+      this.botsCount = Math.max(0, Math.min(C.MAX_PLAYERS - 1, Math.floor(msg.bots)));
     }
     if (msg.botMix && typeof msg.botMix === 'object') {
       this.botMix = {
@@ -348,111 +390,75 @@ class MatchManager {
         hard: Number(msg.botMix.hard) || 0.2
       };
     }
-
     this.broadcastLobby();
   }
 
   handleStart(player) {
-    if (!player.isHost) return;
+    if (this.hostId !== player.id) return;
     if (this.phase !== S.PHASE.LOBBY) return;
 
-    if (this.flags.noLaunch) {
-      this.phase = S.PHASE.PLAY;
-    } else {
-      this.phase = S.PHASE.LAUNCH;
+    // Ban dai bac (LAUNCH) lam o M11. Tam thoi: vao thang PLAY, dat moi nguoi len 1 dao ngau nhien
+    // theo seed (--no-launch: dao trung tam nhu BIEN-CHUNG muc 14).
+    this.phase = S.PHASE.PLAY;
+    for (const p of this.players.values()) {
+      const spot = this.flags.noLaunch ? this.world.getIslandSpawn('fortress') : this.world.getRandomSpawn(this.rng);
+      this.teleportPlayer(p, spot.x, spot.y);
     }
 
+    logger.info('match', 'Bat dau tran', { players: this.players.size, bots: this.botsCount });
     this.net.broadcast({
       t: S.MSG.PHASE,
       phase: this.phase,
       t0: Date.now(),
-      data: {
-        bots: this.botsCount,
-        botMix: this.botMix
-      }
+      data: { bots: this.botsCount, botMix: this.botMix }
     });
   }
 
-  handleTeleport(player, msg) {
-    if (!player) return;
-    let targetX = player.x;
-    let targetY = player.y;
-    let targetName = 'tọa độ mới';
-
-    if (typeof msg.island === 'string' && S.ISLANDS && S.ISLANDS[msg.island]) {
-      const isl = S.ISLANDS[msg.island];
-      targetX = isl.cx * 16 + 8;
-      targetY = isl.cy * 16 + 8;
-      targetName = isl.name;
-    } else if (typeof msg.x === 'number' && typeof msg.y === 'number') {
-      targetX = msg.x;
-      targetY = msg.y;
-    } else if (typeof msg.tx === 'number' && typeof msg.ty === 'number') {
-      targetX = msg.tx * 16 + 8;
-      targetY = msg.ty * 16 + 8;
+  handleAct(player, msg) {
+    if (msg.a === S.ACT.DEV) {
+      this.runDev(player, String(msg.arg || ''));
     }
+  }
 
-    player.x = targetX;
-    player.y = targetY;
+  runDev(player, line) {
+    const res = devcmd.run(this, player, line);
+    if (player.client) {
+      this.net.send(player.client, { t: S.MSG.TOAST, text: res.text, kind: res.ok ? 'info' : 'warn' });
+    }
+  }
+
+  teleportPlayer(player, x, y) {
+    player.x = x;
+    player.y = y;
     player.vx = 0;
     player.vy = 0;
-
-    this.net.send(player, {
-      t: S.MSG.CHAT,
-      from: 'Hệ thống',
-      text: `Đã dịch chuyển tới ${targetName} (${Math.round(targetX)}, ${Math.round(targetY)})`
-    });
   }
 
   handleChat(player, msg) {
-    if (typeof msg.text !== 'string') return;
-    const cleanText = msg.text.trim().slice(0, 120);
-    if (!cleanText) return;
+    const text = NetManager.cleanText(msg.text, 120);
+    if (!text) return;
 
-    // Xu ly lenh dev /tp
-    if (cleanText.startsWith('/tp')) {
-      const parts = cleanText.split(/\s+/);
-      if (parts.length >= 2) {
-        const target = parts[1].toLowerCase();
-        if (S.ISLANDS && S.ISLANDS[target]) {
-          this.handleTeleport(player, { island: target });
-          return;
-        } else if (parts.length >= 3) {
-          const tx = parseInt(parts[1], 10);
-          const ty = parseInt(parts[2], 10);
-          if (!isNaN(tx) && !isNaN(ty)) {
-            this.handleTeleport(player, { tx, ty });
-            return;
-          }
-        }
-      }
+    // Chong spam: toi da CHAT_MAX_PER_SEC tin moi giay
+    const now = Date.now();
+    if (now - player.lastChatAt < 1000 / C.CHAT_MAX_PER_SEC) return;
+    player.lastChatAt = now;
+
+    if (text.startsWith('/')) {
+      this.runDev(player, text);
+      return;
     }
 
-    this.net.broadcast({
-      t: S.MSG.CHAT,
-      from: player.name,
-      text: cleanText
-    });
+    this.net.broadcast({ t: S.MSG.CHAT, from: player.name, text: text });
   }
 
   broadcastLobby() {
+    if (!this.net) return;
     const list = [];
     for (const p of this.players.values()) {
-      if (p.disconnectedAt) continue; // Khong hien thi nhan vat dang rot mang trong lobby list
-      list.push({
-        id: p.id,
-        name: p.name,
-        colors: p.colors,
-        isHost: (p.id === this.hostId)
-      });
+      if (p.disconnectedAt) continue;
+      list.push({ id: p.id, name: p.name, colors: p.colors, isHost: (p.id === this.hostId) });
     }
-
-    this.net.broadcast({
-      t: S.MSG.LOBBY,
-      players: list,
-      bots: this.botsCount,
-      botMix: this.botMix
-    });
+    this.net.broadcast({ t: S.MSG.LOBBY, players: list, bots: this.botsCount, botMix: this.botMix });
   }
 }
 
