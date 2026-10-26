@@ -4,7 +4,7 @@ Người dùng chỉ cần nói "tiếp" (hoặc "đọc TIEP.md"). Phiên mới
 
 ## 1. Việc của phiên này
 
-- **Task:** M03B-T01f – Chiều sâu đảo và nước (đang dở, làm tiếp từ bước 3)
+- **Task:** M03B-T01f – Chiều sâu đảo và nước (đang dở, làm tiếp từ bước 3) **+ bố trí đảo tự nhiên** (mục "Bổ sung" trong report; nên làm phần bố trí trước, vì nó đổi map rồi mới vẽ)
 - **Model gợi ý:** Opus (task đồ họa cần nhìn ảnh và tự đánh giá). Nếu đang chạy model khác, báo người dùng một câu rồi vẫn làm.
 - **Đọc (theo thứ tự, chỉ những file này):**
   1. `00-QUY-TRINH-AI.md` mục 2, 4, 6, 7
@@ -24,6 +24,7 @@ Người dùng chỉ cần nói "tiếp" (hoặc "đọc TIEP.md"). Phiên mới
 - **File mới `02g`:**
   - Thêm vào `client/index.html` (sau `02f`), `EXPECTED_SCRIPTS` trong `tools/check_static.py`, và `docs/CAU-TRUC-THU-MUC.md`.
   - `server/tests/palette_tiles.test.js` vẫn yêu cầu sprite `tile_*` 3 biến thể ở `02e`: giữ `02e`, chỉ không dùng nó để vẽ nền nữa.
+- **Người dùng rất để ý chi phí token:** trước khi làm, chọn cách ít tốn nhất mà vẫn đúng (đọc ít file, ít ảnh chụp, không review lan man). Ảnh xem toàn bản đồ có thể tạo bằng script Node + zlib xuất PNG (không cần mở trình duyệt).
 - **Viết file:** công cụ ghi file có thể biến chuỗi `\uXXXX` thành ký tự thật. Tránh ` `/` ` trong regex literal (đã gặp ở `net.js`).
 - **Chạy test:** máy này thiếu `websockets` ở Python hệ thống. Chạy `run_all.py` bằng Python có `websockets`, hoặc `pip install -r tools/requirements.txt`.
 - **Cổng:** 8080 trên máy này có thể bị chương trình khác chiếm. Chạy dev bằng `node server/server.js --dev --seed 1 --port 8098`.
