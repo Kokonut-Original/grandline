@@ -1,6 +1,6 @@
 # TIẾN ĐỘ & KẾ HOẠCH
 
-## TASK HIỆN TẠI: M03B-T02
+## TASK HIỆN TẠI: M03B-T01e
 
 ## Quyết định đã chốt
 
@@ -89,6 +89,16 @@
 - [x] **T01c Mở rộng đảo & scale vật phẩm**
   - Mục tiêu: Mở rộng bán kính fortress = 32, 9 đảo = 24-30 tile, khoảng cách tâm 110 tile; scale số lượng cây, rương, nhà theo diện tích mới (~2.1-2.4 lần); sửa render nền ô cây không còn ô vuông xanh; kiểm tra liên thông mangrove và các ràng buộc bản đồ.
   - Xong khi: run_all PASS, test ràng buộc bản đồ PASS, cây hiển thị đẹp trên mọi biome.
+- [x] **T01d Hiển thị pixel chuẩn**
+  - Mục tiêu: bỏ tầm nhìn 1.5x (scale lẻ), giữ VIEW 480×270 cố định, phóng to theo số nguyên pixel thiết bị (có tính dpr), uiCanvas vẽ ở độ phân giải thật, UI DOM to theo game, tia ngắm chỉ hiện khi F3.
+  - Xong khi: run_all PASS; toàn màn hình mọi dpr pixel đều nhau, không lưới mờ giữa chunk, chữ HUD nét.
+- [ ] **T01e Di chuyển chuẩn**
+  - Mục tiêu: bỏ chạy nhanh (Shift về Lục Thức ô 1), `shared/22-move.js` dùng chung server/client, server xếp hàng input theo seq, nội suy hiển thị, camera theo dt, sửa reconnect nhân đôi, khóa `tp` sau `--dev`.
+  - Xong khi: run_all PASS; test input dồn gói vẫn đi đúng quãng đường; đi vào cây/nước không bị kéo ngược.
+- [ ] **T01f Chiều sâu đảo và nước**
+  - Mục tiêu: vách bờ + bóng đổ, nước gradient + gợn động + bọt bờ, bãi cát, bờ theo nhiễu, texture riêng từng biome.
+- [ ] **T01g Sắp theo y + ánh sáng**
+  - Mục tiêu: một danh sách vẽ sắp theo y, lớp ánh sáng theo ART-REF (ambient theo vùng).
 - [ ] **T02 Nhà top-down**
   - Mục tiêu: Nhà 2D top-down surviv.io, mái che + skylight, thềm gạch, thùng crate, barrel, hiệu ứng biến mất mái khi vào trong.
   - Xong khi: đứng ngoài thấy mái, bước vào trong mái mờ dần thấy nội thất.
@@ -199,3 +209,7 @@ Mỗi task trái phải có: data đầy đủ, server logic, hiệu ứng clien
 | M03-T03 | reports/M03-T03.md | 2026-10-26 |
 | M03-T04 | reports/M03-T04.md | 2026-10-26 |
 | M03-TONG-KET | reports/M03-TONG-KET.md | 2026-10-26 |
+| M03B-T01 | reports/M03B-T01.md | 2026-10-26 |
+| M03B-T01b | reports/M03B-T01b.md | 2026-10-26 |
+| M03B-T01c | reports/M03B-T01c.md | 2026-10-26 |
+| M03B-T01d | reports/M03B-T01d.md | 2026-10-26 |

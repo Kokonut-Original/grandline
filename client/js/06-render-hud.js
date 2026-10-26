@@ -78,6 +78,9 @@
     const me = state && state.me;
     const map = state && state.map;
 
+    // 0. Ten nguoi choi tren dau (toa do the gioi -> man hinh), ve o day de chu net
+    drawWorldLabels(ctx);
+
     // 1. Ve Minimap goc tren ben phai
     if (me && map) {
       drawMinimap(ctx, me, map);
@@ -98,6 +101,16 @@
       drawDebugOverlay(ctx, me, state);
     }
   };
+
+  function drawWorldLabels(ctx) {
+    if (!OP.R || !OP.R.getWorldLabels || !OP.CAM || !OP.CAM.worldToScreen) return;
+    const labels = OP.R.getWorldLabels();
+    for (let i = 0; i < labels.length; i++) {
+      const l = labels[i];
+      const p = OP.CAM.worldToScreen(l.x, l.y);
+      drawOutlinedText(ctx, l.text, p.x, p.y, 10, l.color, '#160e22', 'center');
+    }
+  }
 
   function drawMinimap(ctx, me, map) {
     const size = 64;
@@ -317,5 +330,10 @@
   }
 
   OP.HUD.drawOutlinedText = drawOutlinedText;
+
+  // Cac lop ve khac (05b) dung de chi hien thong tin go loi khi bat F3
+  OP.HUD.isDebug = function () {
+    return showDebug;
+  };
 
 })();

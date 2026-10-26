@@ -68,6 +68,26 @@ function run() {
   const S = globalThis.OP_SHARED;
   const mapMax = S.CONST.MAP_TILES * S.CONST.TILE; // 320 * 16 = 5120
 
+  // Camera thay dung VIEW 480x270, khong con scale le (M03B-T01d)
+  assert.strictEqual(OP.CAM.w, S.CONST.VIEW_W, 'Camera phai rong dung VIEW_W');
+  assert.strictEqual(OP.CAM.h, S.CONST.VIEW_H, 'Camera phai cao dung VIEW_H');
+  assert.strictEqual(OP.CAM.visionScale, undefined, 'Khong duoc con he so tam nhin le');
+
+  OP.CAM.follow(1000.4, 1000.6, 1.0);
+  const fakeCtx = {
+    calls: [],
+    save: function () { this.calls.push(['save']); },
+    translate: function (x, y) { this.calls.push(['translate', x, y]); },
+    scale: function () { this.calls.push(['scale']); }
+  };
+  OP.CAM.apply(fakeCtx);
+  assert.ok(!fakeCtx.calls.some(c => c[0] === 'scale'), 'Camera khong duoc scale canvas');
+  const tr = fakeCtx.calls.find(c => c[0] === 'translate');
+  assert.ok(Number.isInteger(tr[1]) && Number.isInteger(tr[2]), 'Dich camera phai la so nguyen');
+  const centerScreen = OP.CAM.worldToScreen(OP.CAM.x, OP.CAM.y);
+  assert.ok(Math.abs(centerScreen.x - S.CONST.VIEW_W / 2) <= 0.5, 'Tam camera phai o giua man hinh (x)');
+  assert.ok(Math.abs(centerScreen.y - S.CONST.VIEW_H / 2) <= 0.5, 'Tam camera phai o giua man hinh (y)');
+
   OP.CAM.follow(1000, 1000, 1.0);
   assert.strictEqual(OP.CAM.x, 1000, 'Camera phai di chuyen dung toa do muc tieu');
   assert.strictEqual(OP.CAM.y, 1000, 'Camera phai di chuyen dung toa do muc tieu');

@@ -14,16 +14,15 @@
     VIEW_H: 270
   };
 
-  const VISION_SCALE = 1.5;
-
+  // Camera thay dung VIEW_W x VIEW_H pixel the gioi (1 pixel the gioi = 1 pixel worldCanvas).
+  // Phong to len man hinh do 10-main.js lam theo so nguyen, khong scale trong canvas.
   const CAM = {
     x: (CONST.MAP_TILES * CONST.TILE) / 2,
     y: (CONST.MAP_TILES * CONST.TILE) / 2,
     targetX: (CONST.MAP_TILES * CONST.TILE) / 2,
     targetY: (CONST.MAP_TILES * CONST.TILE) / 2,
-    visionScale: VISION_SCALE,
-    w: Math.round((CONST.VIEW_W || 480) * VISION_SCALE),
-    h: Math.round((CONST.VIEW_H || 270) * VISION_SCALE),
+    w: CONST.VIEW_W || 480,
+    h: CONST.VIEW_H || 270,
 
     follow: function (tx, ty, smooth) {
       if (typeof tx === 'number') this.targetX = tx;
@@ -54,25 +53,27 @@
       }
     },
 
+    // Goc tren trai cua khung nhin, lam tron de moi thu ve dung luoi pixel
+    offsetX: function () {
+      return Math.round(this.w / 2 - this.x);
+    },
+
+    offsetY: function () {
+      return Math.round(this.h / 2 - this.y);
+    },
+
     worldToScreen: function (wx, wy) {
-      const sx = (wx - this.x) / this.visionScale + 240;
-      const sy = (wy - this.y) / this.visionScale + 135;
-      return { x: sx, y: sy };
+      return { x: wx + this.offsetX(), y: wy + this.offsetY() };
     },
 
     screenToWorld: function (sx, sy) {
-      const wx = (sx - 240) * this.visionScale + this.x;
-      const wy = (sy - 135) * this.visionScale + this.y;
-      return { x: wx, y: wy };
+      return { x: sx - this.offsetX(), y: sy - this.offsetY() };
     },
 
     apply: function (ctx) {
       if (!ctx) return;
       ctx.save();
-      // Dua tam ve chinh giua viewport logic 480x270 va phong to tam nhin 1.5x
-      ctx.translate(240, 135);
-      ctx.scale(1 / this.visionScale, 1 / this.visionScale);
-      ctx.translate(-Math.round(this.x), -Math.round(this.y));
+      ctx.translate(this.offsetX(), this.offsetY());
     },
 
     restore: function (ctx) {

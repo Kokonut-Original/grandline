@@ -21,31 +21,41 @@ html, body {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background-color: #0d1117;
+  background-color: #07050c;
   color: #f0f6fc;
   font-family: 'VT323', monospace;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
+/* Kich thuoc va vi tri do 10-main.js tinh theo pixel thiet bi (scale nguyen) */
 #game-container {
-  position: relative;
+  position: absolute;
+  left: 0;
+  top: 0;
   width: 480px;
   height: 270px;
   background-color: #000000;
   overflow: hidden;
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+  --ui-scale: 1;
 }
 
 #worldCanvas,
-#uiCanvas,
-#ui-root {
+#uiCanvas {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
+}
+
+/* UI DOM thiet ke theo khung 480x270, phong to cung he so voi game */
+#ui-root {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 480px;
+  height: 270px;
+  transform: scale(var(--ui-scale));
+  transform-origin: 0 0;
 }
 
 #worldCanvas {
@@ -55,11 +65,10 @@ html, body {
   background-color: #0f172a;
 }
 
+/* uiCanvas ve o do phan giai that (1:1 voi man hinh) nen khong can pixelated */
 #uiCanvas {
   z-index: 2;
   pointer-events: none;
-  image-rendering: pixelated;
-  image-rendering: crisp-edges;
 }
 
 #ui-root {
@@ -243,9 +252,10 @@ html, body {
 }
 
 /* Chat */
+/* Dat tren thanh the luc cua HUD (cao 13px, cach day 8px) de khong de len nhau */
 #chat-container {
   position: absolute;
-  bottom: 4px;
+  bottom: 26px;
   left: 4px;
   width: 160px;
   z-index: 10;

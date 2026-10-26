@@ -31,7 +31,15 @@
     ctx.fillText(text, Math.round(x), Math.round(y));
   }
 
+  // Nhan chu (ten nguoi choi) theo toa do the gioi, HUD ve len uiCanvas sau moi khung
+  const worldLabels = [];
+
+  OP.R.getWorldLabels = function () {
+    return worldLabels;
+  };
+
   OP.R.renderEntities = function (ctx) {
+    worldLabels.length = 0;
     if (!ctx) return;
 
     const state = OP.GAME && OP.GAME.state;
@@ -166,8 +174,9 @@
       ctx.fillRect(x - 6, y - 18, 12, 16);
     }
 
-    // 3. Tia huong ngam
-    if (typeof p.aim === 'number') {
+    // 3. Tia huong ngam (chi de go loi, hien khi bat F3)
+    const debugOn = !!(OP.HUD && OP.HUD.isDebug && OP.HUD.isDebug());
+    if (debugOn && typeof p.aim === 'number') {
       const aimLen = 16;
       const targetX = x + Math.cos(p.aim) * aimLen;
       const targetY = (y - 12) + Math.sin(p.aim) * aimLen;
@@ -180,9 +189,9 @@
       ctx.stroke();
     }
 
-    // 4. Ten nguoi choi co dau va vien chu sac net 2 luot
+    // 4. Ten nguoi choi: dua sang uiCanvas (do phan giai that) de chu net, HUD ve sau
     const displayName = p.name || 'Hải Tặc';
-    drawOutlinedText(ctx, displayName, x, y - 30, 14, isMe ? '#4ade80' : '#ffffff', '#160e22');
+    worldLabels.push({ x: x, y: y - 30, text: displayName, color: isMe ? '#fef08a' : '#ffffff' });
 
     // 5. Thanh mau nho
     const hp = p.hp !== undefined ? p.hp : 100;

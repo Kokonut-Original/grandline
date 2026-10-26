@@ -108,10 +108,18 @@
       const isShift = keysDown.has('ShiftLeft') || keysDown.has('ShiftRight');
       const isSprint = isShift && (mx !== 0 || my !== 0);
 
-      // Tinh goc ngam tu vi tri nhan vat (tam man hinh 240, 135) toi chuot
-      const centerX = 240;
-      const centerY = 135;
-      const aim = Math.atan2(mouseScreenY - centerY, mouseScreenX - centerX);
+      // Tinh goc ngam tu vi tri nhan vat toi chuot trong toa do the gioi
+      // (nhan vat khong luon o tam man hinh: camera bi chan o mep map)
+      let aim = 0;
+      const me = OP.GAME && OP.GAME.state && OP.GAME.state.me;
+      if (me && OP.CAM && OP.CAM.screenToWorld) {
+        const mw = OP.CAM.screenToWorld(mouseScreenX, mouseScreenY);
+        aim = Math.atan2(mw.y - (me.y - 12), mw.x - me.x);
+      } else {
+        const viewW = (S.CONST && S.CONST.VIEW_W) || 480;
+        const viewH = (S.CONST && S.CONST.VIEW_H) || 270;
+        aim = Math.atan2(mouseScreenY - viewH / 2, mouseScreenX - viewW / 2);
+      }
 
       // Bitmask nut bam
       let btn = 0;
