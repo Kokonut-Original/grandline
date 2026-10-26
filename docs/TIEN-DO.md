@@ -1,6 +1,6 @@
 # TIẾN ĐỘ & KẾ HOẠCH
 
-## TASK HIỆN TẠI: M03B-T01c
+## TASK HIỆN TẠI: M03B-T02
 
 ## Quyết định đã chốt
 
@@ -86,7 +86,7 @@
 - [x] **T01b Chỉnh màu và tile cỏ, bỏ viền lưới, tối ưu HUD**
   - Mục tiêu: GRASS giảm bão hòa ~#4f8f3c, bỏ viền lưới ca-rô, chi tiết 15-20% với 4 kiểu nhỏ, bờ biển mềm, HUD F3 gọn, xóa chữ thử font.
   - Xong khi: run_all PASS, độ sáng DEEP < SHALLOW < GRASS < SAND, F3 chỉ hiện khi bật.
-- [ ] **T01c Mở rộng đảo & scale vật phẩm**
+- [x] **T01c Mở rộng đảo & scale vật phẩm**
   - Mục tiêu: Mở rộng bán kính fortress = 32, 9 đảo = 24-30 tile, khoảng cách tâm 110 tile; scale số lượng cây, rương, nhà theo diện tích mới (~2.1-2.4 lần); sửa render nền ô cây không còn ô vuông xanh; kiểm tra liên thông mangrove và các ràng buộc bản đồ.
   - Xong khi: run_all PASS, test ràng buộc bản đồ PASS, cây hiển thị đẹp trên mọi biome.
 - [ ] **T02 Nhà top-down**
