@@ -5,7 +5,6 @@ Không tạo file ngoài danh sách này. Muốn thêm file: cập nhật tài l
 ```
 onepiece-br/
 ├── 00-QUY-TRINH-AI.md
-├── TIEP.md                   bàn giao cho phiên kế tiếp (task, file cần đọc, ghi chú); viết lại cuối mỗi task
 ├── package.json              deps: ws | scripts: start, dev, test
 ├── .gitignore                node_modules, logs
 ├── docs/

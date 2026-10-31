@@ -29,7 +29,7 @@
 
 ## KẾ HOẠCH
 
-**Model gợi ý** ghi sau tên task: `[Opus]` phần khung khó, sai sẽ kéo theo nhiều thứ; `[Sonnet]` việc rõ ràng theo mẫu; `[Flash]` việc nhỏ lặp lại (thử được, nhưng nên để Opus/Sonnet review cuối milestone).
+**Tag mức khó** ghi sau tên task: `[Opus]` khung khó, sai sẽ kéo theo nhiều thứ; `[Sonnet]` việc rõ ràng theo mẫu; `[Flash]` việc nhỏ lặp lại. Cách dùng tag: xem 00-QUY-TRINH-AI.md mục 0.
 
 **Quy ước mỗi task:**
 - **Mục tiêu:** làm gì.

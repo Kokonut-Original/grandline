@@ -1,7 +1,9 @@
 # QUY TRÌNH LÀM VIỆC CHO AI AGENT
 
-Bạn là lập trình viên AI của dự án **One Piece Battleground**: game battle royale 2D pixel, góc nhìn top-down, tối đa 32 người (thiếu thì thêm bot), chơi qua mạng LAN ảo Radmin VPN.
+Dự án **One Piece Battleground**: game battle royale 2D pixel, góc nhìn top-down, tối đa 32 người (thiếu thì thêm bot), chơi qua mạng LAN ảo Radmin VPN.
 Tuân thủ tuyệt đối quy trình này.
+
+Dự án chạy theo mô hình **SẾP – THỢ** (mục 0). Sếp đọc mục 0, 1, 3, 7, 8, 9; thợ đọc mục 2, 8 và mục 4, 5 khi cần.
 
 Nếu các tài liệu mâu thuẫn nhau, ưu tiên theo thứ tự:
 **BIEN-CHUNG.md > CONTEXT.md > TIEN-DO.md > code hiện có.**
@@ -9,23 +11,35 @@ Gặp mâu thuẫn hoặc thông tin mơ hồ: DỪNG và hỏi người dùng, 
 
 ---
 
-## 1. ĐẦU MỖI PHIÊN (bắt buộc, đúng thứ tự)
+## 0. VAI TRÒ
 
-Mỗi phiên (mỗi chat) chỉ làm **1 task**. Để tiết kiệm, chỉ đọc đúng những gì cần:
+**SẾP (phiên chính, model mạnh): bộ não, KHÔNG viết code.**
+- Được làm: đọc code, chạy test, chạy game để kiểm tra; sửa `docs/*.md`, `reports/*.md`, file quy trình này; git commit + push.
+- KHÔNG được sửa file trong `client/`, `server/`, `shared/`, `tools/`. Code sai thì trả lại cho thợ, không tự vá dù chỉ 1 dòng.
+- Việc của sếp: hiểu task, thiết kế logic, chốt tên/hằng/message mới, chia việc, viết brief (mục 8), review, bắt sửa, commit, báo người dùng.
 
-1. Đọc `TIEP.md` (bàn giao từ phiên trước): task, model gợi ý, danh sách file cần đọc, ghi chú.
-2. Đọc các mục của file này mà TIEP.md chỉ ra (tối thiểu mục 2, 4, 6, 7).
-3. Đọc report mà TIEP.md chỉ ra (thường là report task trước hoặc report đang dở).
-4. `docs/BIEN-CHUNG.md`, `docs/CONTEXT.md`, `docs/CAU-TRUC-THU-MUC.md`, `docs/ART-REF.md`: **chỉ đọc mục liên quan đến task** (tra theo tiêu đề mục), không đọc cả file. Khi thêm tên/hằng/message mới thì bắt buộc đọc mục tương ứng của BIEN-CHUNG; khi thêm file thì đọc CAU-TRUC.
-5. Đọc code của mọi file mà task sẽ đụng tới TRƯỚC khi sửa.
+**THỢ (sub agent `tho-code`, model rẻ hơn): tay code.**
+- Chỉ code đúng brief, chạy test, viết report, trả báo cáo ngắn. Không thiết kế, không mở rộng phạm vi, không dùng git để ghi.
 
-Nếu không có TIEP.md: đọc mục "TASK HIỆN TẠI" trong `docs/TIEN-DO.md` và report mới nhất.
+**NGƯỜI DÙNG: chỉ xem kết quả cuối.** Sếp tự quyết mọi thứ kỹ thuật. Chỉ hỏi người dùng khi tài liệu mâu thuẫn, hoặc cần quyết định gameplay/thẩm mỹ mà tài liệu chưa nói.
 
-Sau khi đọc, viết tóm tắt 3–5 dòng:
-- Đang ở task nào
-- Sẽ làm gì
-- Sửa những file nào
-- Test bằng cách nào
+**Tag trong TIEN-DO** là mức khó: `[Opus]` khung khó (sếp nghĩ kỹ, brief chi tiết, có thể chia 2–3 brief nối tiếp); `[Sonnet]` việc rõ ràng (1 brief); `[Flash]` việc nhỏ.
+
+**Tiết kiệm token (sếp):**
+- Brief càng cụ thể (file, hàm, tên, tiêu chí) thì thợ càng ít phải dò, ít làm lại. Đây là chỗ tiết kiệm lớn nhất.
+- Review bằng diff + kết quả test, không đọc lại cả file. Task đồ họa: 1–3 ảnh chụp là đủ.
+- Sửa thì `SendMessage` cho đúng thợ đã làm (còn ngữ cảnh), nói đúng chỗ sai; không gọi thợ mới làm lại từ đầu.
+
+---
+
+## 1. ĐẦU PHIÊN (sếp)
+
+Người dùng gõ "tiếp" là bắt đầu. Chỉ đọc đúng những gì cần:
+
+1. `docs/TIEN-DO.md`: mục "TASK HIỆN TẠI", dòng của task đó, mục "Quyết định đã chốt".
+2. Report task trước: mục "Ghi chú cho task sau".
+3. Mục liên quan trong `docs/CONTEXT.md`, `docs/BIEN-CHUNG.md`, `docs/ART-REF.md`, `docs/CAU-TRUC-THU-MUC.md` (tra theo tiêu đề, không đọc cả file).
+4. Code: chỉ đủ để thiết kế và chỉ đúng chỗ cho thợ (tên hàm, vị trí). Task `[Opus]` đọc kỹ hơn.
 
 ---
 
@@ -72,13 +86,19 @@ Sau khi đọc, viết tóm tắt 3–5 dòng:
 
 ## 3. LÀM MỘT TASK
 
-1. Mỗi lần chỉ làm **1 task** (một mã `Mxx-Tyy` trong TIEN-DO).
-2. Tạo `reports/Mxx-Tyy.md` và ghi phần **Kế hoạch** trước khi code.
-3. Code theo từng bước nhỏ. Sau mỗi bước chạy `node --check <file>`.
-4. Logic server mới phải có test trong `server/tests/`.
-5. Chạy **Double Check** (mục 4).
-6. Viết report, cập nhật TIEN-DO, **viết lại `TIEP.md`** cho task kế tiếp (task, model gợi ý theo tag trong TIEN-DO, file cần đọc, ghi chú).
-7. **DỪNG lại**, gửi tóm tắt cho người dùng, nhắc người dùng mở chat mới và gõ "tiếp".
+Mỗi task là một mã `Mxx-Tyy` trong TIEN-DO, cuối cùng là đúng 1 commit.
+
+1. **Sếp thiết kế:** đọc theo mục 1, chốt cách làm, tên/hằng mới, file sẽ đụng.
+2. **Sếp giao:** gọi sub agent `tho-code` với brief theo mẫu mục 8. Task lớn chia nhiều brief nối tiếp (brief sau dựa trên kết quả brief trước). Không cho 2 thợ sửa cùng file một lúc.
+3. **Thợ làm:** ghi Kế hoạch vào `reports/Mxx-Tyy.md`, code từng bước nhỏ (`node --check` sau mỗi bước), logic server mới có test trong `server/tests/`, chạy Double Check (mục 4), viết report (mục 6), trả báo cáo ngắn.
+4. **Sếp review:**
+   - Đọc báo cáo của thợ.
+   - `git status` + `git diff --stat`: có đụng file ngoài brief không.
+   - Đọc diff phần lõi, đối chiếu luật mục 2 và brief.
+   - Tự chạy lại `python tools/run_all.py` (chỉ xem phần cuối output).
+   - Task có hình ảnh/thao tác: bật dev (mục 9), chụp 1–3 ảnh, xem console.
+5. **Chưa đạt:** `SendMessage` cho đúng thợ đó, liệt kê từng lỗi (file, hành vi sai, kỳ vọng). Tối đa 2 vòng. Vẫn sai thì sếp xem lại brief/thiết kế (lỗi có thể nằm ở brief), viết brief mới; bế tắc thì báo người dùng.
+6. **Đạt:** sếp thêm mục "Duyệt" vào report, cập nhật TIEN-DO (mục 7), commit + push.
 
 ---
 
@@ -106,7 +126,7 @@ Tất cả phải **PASS**. Dán output cuối vào report.
 - [ ] Server log `logs/` không có dòng `ERROR` mới
 - [ ] Đã cập nhật CAU-TRUC nếu có file mới, BIEN-CHUNG nếu có biến mới
 
-**Cuối mỗi milestone** (task cuối cùng của một Mxx) làm thêm **Double Check lớn**:
+**Cuối mỗi milestone** (task cuối cùng của một Mxx) làm thêm **Double Check lớn** (sếp giao thợ làm bằng 1 brief riêng, sếp duyệt bản tổng kết):
 - Chạy `python tools/stress_test.py`.
 - Đọc lại toàn bộ code của milestone, tìm trùng lặp và biến lệch tên.
 - Viết `reports/Mxx-TONG-KET.md`.
@@ -121,7 +141,7 @@ Tất cả phải **PASS**. Dán output cuối vào report.
 3. **Sửa tận gốc,** không vá triệu chứng.
 4. **Thêm test hồi quy** để lỗi không quay lại.
 5. **Xóa log `[DBG]` tạm** trước khi báo xong.
-6. **Tối đa 3 vòng sửa.** Vẫn lỗi thì dừng, ghi rõ vào report (đã thử gì, giả thuyết là gì) và hỏi người dùng.
+6. **Tối đa 3 vòng sửa.** Vẫn lỗi thì thợ dừng, ghi rõ vào report (đã thử gì, giả thuyết là gì) và báo sếp. Sếp quyết hướng tiếp theo.
 
 ---
 
@@ -138,14 +158,69 @@ Tất cả phải **PASS**. Dán output cuối vào report.
 ## Bug đã biết / việc còn dở
 ## Người dùng cần test tay
 ## Câu hỏi cho người dùng
-## Ghi chú cho task sau (cạm bẫy, quyết định vừa chốt, việc dở; chép sang TIEP.md)
+## Ghi chú cho task sau (cạm bẫy, quyết định vừa chốt, việc dở; phiên sau đọc mục này)
 ## Task tiếp theo
+## Duyệt (sếp ghi: đạt sau mấy vòng, điểm đã bắt sửa)
 ```
 
 ---
 
-## 7. KẾT THÚC PHIÊN
+## 7. KẾT THÚC TASK / PHIÊN (sếp)
 
-- TIEN-DO.md: đánh dấu `[x]` task đã xong, chuyển "TASK HIỆN TẠI" sang task kế tiếp, cập nhật bảng bug.
-- TIEP.md: viết lại cho phiên sau (xem mục 3 bước 6). Phiên sau chỉ dựa vào file này nên ghi đủ, ngắn gọn.
-- Không bao giờ kết thúc phiên khi code đang ở trạng thái chạy không được. Nếu phải dừng giữa chừng, ghi rõ vào report.
+**Sau mỗi task đạt:**
+1. TIEN-DO.md: đánh dấu `[x]`, chuyển "TASK HIỆN TẠI" sang task kế tiếp, cập nhật bảng bug, thêm vào "Quyết định đã chốt" nếu có.
+2. Commit 1 lần: `git add` đúng các file của task, message `Mxx-Tyy: <mô tả ngắn>` (không dấu vết AI, xem mục 2), rồi push.
+3. Báo người dùng 3–5 dòng: đã làm gì, cần xem gì.
+
+**Làm tiếp hay dừng:** sếp tự làm tiếp task kế tiếp trong cùng phiên. Dừng khi:
+- vừa xong milestone (người dùng cần test tay 2 máy qua Radmin), hoặc
+- có câu hỏi cho người dùng, hoặc
+- phiên đã xong 3 task (ngữ cảnh dài thì tốn): nhắc người dùng mở chat mới, gõ "tiếp".
+
+Không bao giờ dừng khi code đang chạy không được. Phải dừng giữa chừng thì ghi rõ vào report và không commit.
+
+---
+
+## 8. BRIEF VÀ BÁO CÁO
+
+**Mẫu brief (sếp gửi thợ):**
+```
+TASK: Mxx-Tyy – <tên> (brief k/n nếu chia nhỏ)
+MỤC TIÊU: <1–3 câu>
+ĐỌC: <file + đoạn/hàm cụ thể; chỉ những cái này>
+LÀM:
+  1. <file> – <hàm/đoạn>: <thay đổi cụ thể>
+  2. ...
+TÊN/HẰNG MỚI: <tên đã chốt + file shared + mục BIEN-CHUNG> hoặc "không"
+KHÔNG LÀM: <ranh giới phạm vi>
+XONG KHI: <tiêu chí kiểm được>
+TEST: run_all PASS + <test mới cần viết, nếu có>
+REPORT: tạo/cập nhật reports/Mxx-Tyy.md (mục 6, trừ mục Duyệt)
+```
+
+**Thợ phải tuân thủ:**
+- Lần đầu trong phiên: đọc mục 2 và mục này. Mục 4, 5 khi cần. Sau đó chỉ đọc file trong brief và file mình sắp sửa.
+- Làm đúng brief. Không thêm tính năng, không refactor ngoài phạm vi, không đổi tên.
+- Brief mơ hồ, mâu thuẫn tài liệu, hoặc không làm được mà không phạm luật mục 2: DỪNG, trả câu hỏi cho sếp, không tự đoán.
+- Không chạy git để ghi (add, commit, push, checkout, reset, stash, branch). Được `git status`/`git diff` để xem.
+- Không sửa `docs/TIEN-DO.md`, file quy trình này, `docs/ART-REF.md` (trừ khi brief yêu cầu).
+- Tắt mọi server đã bật trước khi trả lời.
+
+**Mẫu báo cáo thợ trả sếp (tối đa 15 dòng, không dán code):**
+```
+KẾT QUẢ: XONG | DỪNG (<lý do>)
+FILE: <tạo/sửa/xóa>
+TEST: run_all <PASS/FAIL> – <dòng tóm tắt>
+LỆCH BRIEF: <chỗ làm khác brief và vì sao> hoặc "không"
+CẦN SẾP QUYẾT: <câu hỏi> hoặc "không"
+```
+
+---
+
+## 9. VẬN HÀNH
+
+- Test: `python tools/run_all.py` (Python 3.12 hệ thống đã cài `websockets`).
+- Dev: `node server/server.js --dev --seed 1 --port 8098` (cổng 8080 có thể bị chiếm), mở `http://localhost:8098/?debug=1`.
+- Trong trận: chat `/tp <đảo>` hoặc `/tp <tx> <ty>`. Tab bật/tắt bản đồ lớn; bấm phím qua công cụ có thể bị bật 2 lần, dùng `window.dispatchEvent(new KeyboardEvent('keydown',{code:'Tab'}))`.
+- Không commit: `docs/ART-REF.md` (người dùng tự sửa) và `reports/REVIEW-*.md`.
+- Viết file: công cụ ghi file có thể biến chuỗi `\uXXXX` thành ký tự thật. Không đặt ký tự U+2028/U+2029 dạng thật trong regex literal; dùng cách khác (ví dụ `new RegExp` với chuỗi ghép).
