@@ -1,6 +1,8 @@
 // client/js/05b-render-entities.js
-// Render thuc the nguoi choi chibi 16x24, bong do elip chuan ART-REF (rgba(0,0,0,.35)), vat the the gioi va thanh mau.
-// Phu thuoc: client/js/00-boot.js, client/js/02a-pixel-core.js, client/js/02c-sprites-chars.js.
+// Render thuc the theo MOT danh sach sap theo y chan (vat thap hon tren man hinh de vat cao hon):
+// ruong, nha, cay, nguoi choi, item, thuyen. Luot 1 ve tat ca bong elip (ART-REF rgba(0,0,0,.35)), luot 2 ve sprite.
+// Overlay nguoi choi (tia ngam F3, nhan ten, thanh mau, thanh the luc) ve rieng qua OP.R.renderOverlays, sau lop anh sang.
+// Phu thuoc: client/js/00-boot.js, client/js/02a-pixel-core.js, client/js/02c-sprites-chars.js, client/js/04-camera.js.
 
 (function () {
   'use strict';
@@ -38,79 +40,164 @@
     return worldLabels;
   };
 
-  OP.R.renderEntities = function (ctx) {
-    worldLabels.length = 0;
-    if (!ctx) return;
+  // Ban kinh bong theo loai thuc the (giu nguyen tham so cu)
+  const SHADOW_R = { CHEST: 8, HOUSE: 14, TREE: 11, PLAYER: 7, ITEM: 5, BOAT: 12 };
 
-    const state = OP.GAME && OP.GAME.state;
-    if (!state) return;
+  // Danh sach ve dung lai giua cac khung (pool object, khong tao object moi moi khung)
+  const drawPool = [];
+  const drawList = [];
+  let drawCount = 0;
 
-    // 1. Ve cay coi, nha cua, ruong tren dao neu co map
-    if (state.map) {
-      drawWorldObjects(ctx, state.map);
+  // Nguoi choi khung nay (me cuoi cung) de ve overlay sau lop anh sang
+  const overlayList = [];
+  let overlayCount = 0;
+  let overlayMe = null;
+
+  function pushDraw(k, ref, x, y, isMe) {
+    let e = drawPool[drawCount];
+    if (!e) {
+      e = { k: '', ref: null, x: 0, y: 0, o: 0, isMe: false };
+      drawPool[drawCount] = e;
     }
+    e.k = k;
+    e.ref = ref;
+    e.x = x;
+    e.y = y;
+    e.o = drawCount;
+    e.isMe = isMe;
+    drawList[drawCount] = e;
+    drawCount++;
+  }
 
-    // 2. Ve cac thuc the khac (nguoi choi khac, bot, item, thuyen)
-    if (state.ents) {
-      for (const ent of state.ents.values()) {
-        if (ent.k === 'PLAYER') {
-          drawPlayer(ctx, ent, false);
-        } else if (ent.k === 'ITEM') {
-          drawItem(ctx, ent);
-        } else if (ent.k === 'BOAT') {
-          drawBoat(ctx, ent);
-        }
-      }
-    }
+  function compareDraw(a, b) {
+    return (a.y - b.y) || (a.x - b.x) || (a.o - b.o);
+  }
 
-    // 3. Ve chinh minh (me)
-    if (state.me) {
-      drawPlayer(ctx, state.me, true);
-    }
-  };
-
-  function drawWorldObjects(ctx, map) {
-    if (!OP.SPR || !OP.SPR.draw) return;
-    const cam = OP.CAM;
-
-    // 1. Ve ruong bau (Ve bong truoc, sprite sau)
+  // Thu thap ruong, nha, cay trong khung nhin (y chan = y tam bong)
+  function collectMap(map, cam) {
     if (map.chests) {
       for (let i = 0; i < map.chests.length; i++) {
         const c = map.chests[i];
-        if (!cam || cam.isInView(c.x, c.y, 24)) {
-          drawShadow(ctx, c.x, c.y + 6, 8);
-          OP.SPR.draw(ctx, `chest_${c.tier || 'wood'}`, 0, c.x, c.y);
-        }
+        if (!cam || cam.isInView(c.x, c.y, 24)) pushDraw('CHEST', c, c.x, c.y + 6, false);
       }
     }
-
-    // 2. Ve nha cua
     if (map.houses) {
       for (let i = 0; i < map.houses.length; i++) {
         const h = map.houses[i];
-        if (!cam || cam.isInView(h.x, h.y, 40)) {
-          drawShadow(ctx, h.x, h.y + 8, 14);
-          OP.SPR.draw(ctx, h.type || 'house_wood', 0, h.x, h.y);
-        }
+        if (!cam || cam.isInView(h.x, h.y, 40)) pushDraw('HOUSE', h, h.x, h.y + 8, false);
       }
     }
-
-    // 3. Ve cay coi (Ve bong truoc, sprite sau)
     if (map.trees) {
       for (let i = 0; i < map.trees.length; i++) {
         const tr = map.trees[i];
-        if (!cam || cam.isInView(tr.x, tr.y, 32)) {
-          drawShadow(ctx, tr.x, tr.y + 2, 11);
-          OP.SPR.draw(ctx, tr.type || 'tree_palm', 0, tr.x, tr.y);
-        }
+        if (!cam || cam.isInView(tr.x, tr.y, 32)) pushDraw('TREE', tr, tr.x, tr.y + 2, false);
       }
     }
   }
 
+  // Thu thap nguoi choi / item / thuyen trong khung nhin
+  function collectEnt(ent, cam, isMe) {
+    if (cam && !cam.isInView(ent.x, ent.y, 48)) return;
+    const x = Math.round(ent.x);
+    const y = Math.round(ent.y);
+    if (isMe || ent.k === 'PLAYER') {
+      pushDraw('PLAYER', ent, x, y - 1, isMe);
+    } else if (ent.k === 'ITEM') {
+      pushDraw('ITEM', ent, x, y + 4, false);
+    } else if (ent.k === 'BOAT') {
+      pushDraw('BOAT', ent, x, y + 4, false);
+    }
+  }
+
+  function drawSprite(ctx, e) {
+    const ref = e.ref;
+    if (e.k === 'PLAYER') {
+      drawPlayerBody(ctx, ref);
+      return;
+    }
+    if (e.k === 'ITEM') {
+      drawItem(ctx, ref);
+      return;
+    }
+    if (e.k === 'BOAT') {
+      drawBoat(ctx, ref);
+      return;
+    }
+    if (!OP.SPR || !OP.SPR.draw) return;
+    if (e.k === 'CHEST') {
+      OP.SPR.draw(ctx, `chest_${ref.tier || 'wood'}`, 0, ref.x, ref.y);
+    } else if (e.k === 'HOUSE') {
+      OP.SPR.draw(ctx, ref.type || 'house_wood', 0, ref.x, ref.y);
+    } else if (e.k === 'TREE') {
+      OP.SPR.draw(ctx, ref.type || 'tree_palm', 0, ref.x, ref.y);
+    }
+  }
+
+  OP.R.renderEntities = function (ctx) {
+    drawCount = 0;
+    overlayCount = 0;
+    overlayMe = null;
+
+    const state = OP.GAME && OP.GAME.state;
+    if (!ctx || !state) {
+      drawList.length = 0;
+      overlayList.length = 0;
+      return;
+    }
+    const cam = OP.CAM;
+
+    // 1. Thu thap (co cull theo khung nhin)
+    if (state.map && OP.SPR && OP.SPR.draw) {
+      collectMap(state.map, cam);
+    }
+    if (state.ents) {
+      for (const ent of state.ents.values()) {
+        collectEnt(ent, cam, false);
+      }
+    }
+    if (state.me) {
+      collectEnt(state.me, cam, true);
+    }
+    drawList.length = drawCount;
+
+    // 2. Luot 1: ve TAT CA bong truoc moi sprite
+    for (let i = 0; i < drawCount; i++) {
+      const e = drawList[i];
+      drawShadow(ctx, e.x, e.y, SHADOW_R[e.k]);
+    }
+
+    // 3. Sap theo y chan roi luot 2: ve sprite
+    drawList.sort(compareDraw);
+    for (let i = 0; i < drawCount; i++) {
+      const e = drawList[i];
+      drawSprite(ctx, e);
+      if (e.k === 'PLAYER') {
+        if (e.isMe) {
+          overlayMe = e.ref;
+        } else {
+          overlayList[overlayCount++] = e.ref;
+        }
+      }
+    }
+
+    // 4. Danh sach overlay: nguoi khac truoc, me cuoi cung
+    if (overlayMe) overlayList[overlayCount++] = overlayMe;
+    overlayList.length = overlayCount;
+  };
+
+  // Ve overlay nguoi choi sau lop anh sang: thanh mau khong bi cay che, khong bi lam toi
+  OP.R.renderOverlays = function (ctx) {
+    worldLabels.length = 0;
+    if (!ctx) return;
+    for (let i = 0; i < overlayCount; i++) {
+      const p = overlayList[i];
+      drawPlayerOverlay(ctx, p, p === overlayMe);
+    }
+  };
+
   function drawItem(ctx, it) {
     const x = Math.round(it.x);
     const y = Math.round(it.y);
-    drawShadow(ctx, x, y + 4, 5);
     if (OP.SPR && OP.SPR.draw && it.icon) {
       OP.SPR.draw(ctx, it.icon, 0, x, y);
     }
@@ -119,7 +206,6 @@
   function drawBoat(ctx, b) {
     const x = Math.round(b.x);
     const y = Math.round(b.y);
-    drawShadow(ctx, x, y + 4, 12);
     if (OP.SPR && OP.SPR.draw) {
       OP.SPR.draw(ctx, b.sprite || 'boat_dinghy', 0, x, y);
     }
@@ -143,15 +229,12 @@
     return { dir: 'up', flip: false };
   }
 
-  function drawPlayer(ctx, p, isMe) {
+  // Than nguoi choi: sprite chibi hoac khoi pixel du phong (bong da ve o luot 1)
+  function drawPlayerBody(ctx, p) {
     const x = Math.round(p.x);
     const y = Math.round(p.y);
     const colors = p.colors || { hat: '#d9534f', shirt: '#337ab7', hair: '#292b2c' };
 
-    // 1. Ve bong do duoi chan nhan vat (VE TRUOC THUC THE, r = 7px, ry = 3px theo ART-REF)
-    drawShadow(ctx, x, y - 1, 7);
-
-    // 2. Lay hoac khoi tao sprite nguoi choi
     let baseId = null;
     if (OP.SPR && OP.SPR.player) {
       baseId = OP.SPR.player(colors);
@@ -173,8 +256,14 @@
       ctx.fillStyle = colors.shirt || '#337ab7';
       ctx.fillRect(x - 6, y - 18, 12, 16);
     }
+  }
 
-    // 3. Tia huong ngam (chi de go loi, hien khi bat F3)
+  // Overlay nguoi choi: tia ngam F3, nhan ten, thanh mau, thanh the luc
+  function drawPlayerOverlay(ctx, p, isMe) {
+    const x = Math.round(p.x);
+    const y = Math.round(p.y);
+
+    // 1. Tia huong ngam (chi de go loi, hien khi bat F3)
     const debugOn = !!(OP.HUD && OP.HUD.isDebug && OP.HUD.isDebug());
     if (debugOn && typeof p.aim === 'number') {
       const aimLen = 16;
@@ -189,11 +278,11 @@
       ctx.stroke();
     }
 
-    // 4. Ten nguoi choi: dua sang uiCanvas (do phan giai that) de chu net, HUD ve sau
+    // 2. Ten nguoi choi: dua sang uiCanvas (do phan giai that) de chu net, HUD ve sau
     const displayName = p.name || 'Hải Tặc';
     worldLabels.push({ x: x, y: y - 30, text: displayName, color: isMe ? '#fef08a' : '#ffffff' });
 
-    // 5. Thanh mau nho
+    // 3. Thanh mau nho
     const hp = p.hp !== undefined ? p.hp : 100;
     const hpMax = p.hm !== undefined ? p.hm : 100;
     const pct = Math.max(0, Math.min(1, hp / hpMax));
@@ -203,7 +292,7 @@
     ctx.fillStyle = pct > 0.5 ? '#22c55e' : (pct > 0.2 ? '#eab308' : '#ef4444');
     ctx.fillRect(x - 10, y - 23, Math.round(20 * pct), 2);
 
-    // 6. Thanh the luc tren dau: chi cua minh (server khong gui the luc nguoi khac), chi khi chua day
+    // 4. Thanh the luc tren dau: chi cua minh (server khong gui the luc nguoi khac), chi khi chua day
     const stamina = p.stamina !== undefined ? p.stamina : 100;
     if (isMe && stamina < 100) {
       const stPct = Math.max(0, Math.min(1, stamina / 100));

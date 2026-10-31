@@ -265,11 +265,17 @@
 
     ctx.save();
     ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
-    ctx.fillRect(4, 4, 110, 64);
+    ctx.fillRect(4, 4, 150, 76);
 
     const fpsColor = fps >= 55 ? '#5ac54f' : (fps >= 30 ? '#f4c430' : '#da3633');
     drawOutlinedText(ctx, `FPS:  ${fps}`, x, y, 12, fpsColor, '#160e22');
     y += 12;
+
+    if (OP.R && OP.R.getLightInfo) {
+      const li = OP.R.getLightInfo();
+      drawOutlinedText(ctx, `Vùng sáng: ${li.zone} a=${li.a}`, x, y, 12, '#ffb35a', '#160e22');
+      y += 12;
+    }
 
     const pingColor = ping <= 50 ? '#5ac54f' : (ping <= 100 ? '#f4c430' : '#da3633');
     drawOutlinedText(ctx, `PING: ${ping} ms`, x, y, 12, pingColor, '#160e22');

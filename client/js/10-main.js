@@ -141,6 +141,22 @@
         OP.CAM.restore(worldCtx);
       }
 
+      // Lop anh sang ve o toa do man hinh (sau CAM.restore)
+      if (OP.R && OP.R.renderLight) {
+        OP.R.renderLight(worldCtx);
+      }
+
+      // Overlay nguoi choi (thanh mau, the luc, nhan ten) ve tren lop anh sang
+      if (OP.CAM && OP.CAM.apply) {
+        OP.CAM.apply(worldCtx);
+      }
+      if (OP.R && OP.R.renderOverlays) {
+        OP.R.renderOverlays(worldCtx);
+      }
+      if (OP.CAM && OP.CAM.restore) {
+        OP.CAM.restore(worldCtx);
+      }
+
       // Render HUD va bang debug F3 (toa do logic VIEW_W x VIEW_H, da setTransform theo pixelScale)
       if (uiCtx) {
         uiCtx.clearRect(0, 0, VIEW_W, VIEW_H);

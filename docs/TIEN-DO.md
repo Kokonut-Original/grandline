@@ -1,6 +1,6 @@
 # TIẾN ĐỘ & KẾ HOẠCH
 
-## TASK HIỆN TẠI: M03B-T01g
+## TASK HIỆN TẠI: M03B-T02
 
 ## Quyết định đã chốt
 
@@ -106,7 +106,7 @@
   - Xong khi: run_all PASS; test input dồn gói vẫn đi đúng quãng đường; đi vào cây/nước không bị kéo ngược.
 - [x] **T01f Chiều sâu đảo và nước** [Opus]
   - Mục tiêu: vách bờ + bóng đổ, nước gradient + gợn động + bọt bờ, bãi cát, bờ theo nhiễu, texture riêng từng biome.
-- [ ] **T01g Sắp theo y + ánh sáng** [Sonnet]
+- [x] **T01g Sắp theo y + ánh sáng** [Sonnet]
   - Mục tiêu: một danh sách vẽ sắp theo y, lớp ánh sáng theo ART-REF (ambient theo vùng).
 - [ ] **T02 Nhà top-down** [Sonnet]
   - Mục tiêu: Nhà 2D top-down surviv.io, mái che + skylight, thềm gạch, thùng crate, barrel, hiệu ứng biến mất mái khi vào trong.
@@ -217,4 +217,5 @@ Mỗi task trái phải có: data đầy đủ, server logic, hiệu ứng clien
 | M03B-T01b | reports/M03B-T01b.md | 2026-10-26 |
 | M03B-T01c | reports/M03B-T01c.md | 2026-10-26 |
 | M03B-T01d | reports/M03B-T01d.md | 2026-10-26 |
-| M03B-T01e | reports/M03B-T01e.md | 2026-10-26 |
+| M03B-T01e | reports/M03B-T01e.md | 2026-10-26 || M03B-T01f | reports/M03B-T01f.md | 2026-10-26 |
+| M03B-T01g | reports/M03B-T01g.md | 2026-10-31 |

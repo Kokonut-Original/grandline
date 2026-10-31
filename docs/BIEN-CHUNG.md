@@ -553,6 +553,10 @@ OP.CAM.worldToScreen(x, y); OP.CAM.follow(x, y)
 OP.SFX.play(name, x, y)
 OP.UI.toast(text, kind); OP.UI.openInventory(); OP.UI.confirmEat(slot, fruitId)
 OP.HUD.damageNumber(x, y, dmg, type)
+OP.R.renderEntities(ctx)   // tọa độ thế giới: bóng trước, rồi sprite sắp theo y chân
+OP.R.renderLight(ctx)      // tọa độ màn hình, sau CAM.restore: lightmap ambient theo vùng đảo
+OP.R.renderOverlays(ctx)   // tọa độ thế giới, sau renderLight: thanh máu, thể lực, nhãn tên
+OP.R.getLightInfo() -> { zone, a }
 OP.GAME.state   // { me, ents (Map), zone, phase, seed, map }
 ```
 
@@ -636,4 +640,5 @@ Mỗi 10 giây ghi một dòng `perf`: thời gian tick trung bình và lớn nh
 | 2026-10-26 | (ngoài kế hoạch) | Commit "tầm nhìn 1.5x" đã thêm `BTN.SPRINT`, `KEYS.SPRINT` và đổi `KEYS.ROKU1` sang KeyZ mà không ghi ở đây |
 | 2026-10-26 | Thu gọn phạm vi | Còn 16 trái (bỏ moku, gasu, yuki, hana, supa, doru, ito, nikyu, mochi, horo, ryu_allosaurus, uo_seiryu, tori_falcon). Thêm `S.FRUIT_SOURCES`. Bỏ Buster Call (CONST BUSTER_*, EV.BUSTER, `/buster`). `BOT_LEVEL` còn normal, hard. Thức tỉnh là buff chung, bỏ `castRAwaken`. Bot mặc định 60% hard / 40% normal |
 | 2026-10-26 | M03B-T01f | Bỏ `cx`, `cy` khỏi S.ISLANDS; vị trí + hình dạng đảo nằm trong `map.islands` (mapgen theo seed). Thêm `map.islets`, `map.owner` (mục 5). Thêm `S.MAPLAYOUT` (shared/20-mapgen-layout.js, nội bộ mapgen) |
+| 2026-10-31 | M03B-T01g | Thêm API client `OP.R.renderLight`, `OP.R.renderOverlays`, `OP.R.getLightInfo` (mục 11) |
 | 2026-10-26 | M03B-T01e | Bỏ `BTN.SPRINT`, `KEYS.SPRINT`; `KEYS.ROKU1` về lại ShiftLeft. Thêm CONST: INPUT_QUEUE_MAX, INPUT_BURST, MSG_MAX_BYTES, MSG_MAX_PER_SEC, CHAT_MAX_PER_SEC, SINK_MULT, SWIM_EXHAUST_DPS, SHALLOW_STAMINA_REGEN, QUICKSAND_MULT, ICE_KEEP, ICE_ACCEL. Thêm `S.MOVE` (shared/22-move.js). Sửa schema S.ISLANDS theo code. `snap.me` thêm water, fruitId, onBoatId, bỏ sprint. Server gửi `phase` ngay sau `welcome`. Lệnh dev qua `act`/chat, chỉ khi `--dev`. Player server dùng `fruitId`, `onBoatId`, `water` đúng mục 6 |
