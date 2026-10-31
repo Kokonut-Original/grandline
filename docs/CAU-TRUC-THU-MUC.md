@@ -83,7 +83,7 @@ onepiece-br/
 │       ├── 02c-sprites-chars.js   người chơi, Zoan, boss, mob
 │       ├── 02d-sprites-items.js   vũ khí, trái, đồ, icon
 │       ├── 02e-sprites-world.js   tile, cây, nhà, rương, bến, thuyền, chiến hạm
-│       ├── 02f-sprites-fx.js      hạt, đòn đánh, vùng
+│       ├── 02f-sprites-fx.js      hạt, đòn đánh, vùng, thùng crate/barrel
 │       ├── 02g-tiles-paint.js     vẽ tile nền theo thủ tục (biome, nước nhiều dải, vách bờ)
 │       ├── 03-input.js
 │       ├── 04-camera.js

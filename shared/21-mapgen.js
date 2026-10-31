@@ -32,6 +32,10 @@
   // Tile dat lien dat duoc cay/nha/ruong
   const PLACEABLE = [T.GRASS, T.SAND, T.SNOW, T.DIRT, T.STONE, T.FLOOR, T.WOOD];
 
+  // Nha nhieu o: [rong, cao] tinh ca tuong; cua Nam rong HOUSE_DOOR_W o (nha da them cua Bac)
+  const HOUSE_SIZE = { house_small: [6, 5], house_wood: [8, 6], house_stone: [10, 7] };
+  const HOUSE_DOOR_W = 2;
+
   function fnv1a(uint8Arr) {
     let hash = 2166136261;
     for (let i = 0; i < uint8Arr.length; i++) {
@@ -200,6 +204,8 @@
     const houses = [];
     const chests = [];
     const bosses = [];
+    const reserved = new Uint8Array(MAP_W * MAP_H); // o nha + them cua: cay/ruong khong duoc dat
+    const houseRects = [];
 
     // 1. Bo tri (rng rieng de doi bo tri khong lam lech viec dat vat), roi ve dia hinh (moi dao 1 hat nhieu rieng)
     const layoutRng = (S.RNG && S.RNG.create) ? S.RNG.create((s * 7 + 13) | 0) : rng;
@@ -256,18 +262,99 @@
         bosses.push({ id: isl.boss, islandId: isl.id, tx: b.tx, ty: b.ty, x: b.tx * 16 + 8, y: b.ty * 16 + 8 });
       }
 
-      // 5. Nha (cach nhau >= 6 o, khong sat tam spawn)
+      // 5. Nha nhieu o: tuong HOUSE_WALL bao quanh, san ben trong, cua rong 2 o (Nam; nha da them cua Bac)
       let houseType = 'house_wood';
       if (isl.id === 'fortress') houseType = 'house_stone';
       else if (isl.id === 'canal_city' || isl.id === 'samurai') houseType = 'house_small';
+      const hsz = HOUSE_SIZE[houseType];
+      const hw = hsz[0];
+      const hh = hsz[1];
+      const floorTile = (houseType === 'house_stone') ? T.FLOOR : T.WOOD;
       const houseCount = (isl.props && isl.props.houses) || 2;
       for (let i = 0; i < houseCount; i++) {
-        const h = sampleSpot(tiles, rng, isl, 0.2, 0.7, function (tx, ty, t) {
-          return onLand(tx, ty, t) && farFrom(placed, tx, ty, 6);
-        }, 300);
+        const h = sampleSpot(tiles, rng, isl, 0.2, 0.7, function (tx, ty) {
+          const hx = tx - Math.floor(hw / 2);
+          const hy = ty - Math.floor(hh / 2);
+          if (hx - 1 < 1 || hy - 1 < 1 || hx + hw > MAP_W - 2 || hy + hh > MAP_H - 2) return false;
+          for (let yy = hy - 1; yy <= hy + hh; yy++) {
+            for (let xx = hx - 1; xx <= hx + hw; xx++) {
+              if (!onLand(xx, yy, tiles[yy * MAP_W + xx])) return false;
+            }
+          }
+          for (let q = 0; q < placed.length; q++) {
+            const pq = placed[q];
+            if (pq.tx >= hx - 3 && pq.tx <= hx + hw + 2 && pq.ty >= hy - 3 && pq.ty <= hy + hh + 2) return false;
+          }
+          for (let q = 0; q < bosses.length; q++) {
+            const bq = bosses[q];
+            if (bq.islandId === isl.id && bq.tx >= hx - 3 && bq.tx <= hx + hw + 2 && bq.ty >= hy - 3 && bq.ty <= hy + hh + 2) return false;
+          }
+          for (let q = 0; q < houseRects.length; q++) {
+            const r = houseRects[q];
+            if (hx - 3 <= r.x1 && hx + hw + 2 >= r.x0 && hy - 3 <= r.y1 && hy + hh + 2 >= r.y0) return false;
+          }
+          return true;
+        }, 400);
         if (!h) continue;
-        tiles[h.ty * MAP_W + h.tx] = T.HOUSE_WALL;
-        houses.push({ type: houseType, islandId: isl.id, tx: h.tx, ty: h.ty, x: h.tx * 16 + 8, y: h.ty * 16 + 8 });
+
+        const x0 = h.tx - Math.floor(hw / 2);
+        const y0 = h.ty - Math.floor(hh / 2);
+        const doorX = x0 + hw / 2 - 1;
+        const doors = [{ tx: doorX, ty: y0 + hh - 1, side: 'S' }];
+        if (houseType === 'house_stone') doors.push({ tx: doorX, ty: y0, side: 'N' });
+
+        // Tuong vien, san ben trong va o cua
+        for (let yy = y0; yy < y0 + hh; yy++) {
+          for (let xx = x0; xx < x0 + hw; xx++) {
+            const edge = (xx === x0 || xx === x0 + hw - 1 || yy === y0 || yy === y0 + hh - 1);
+            let isDoor = false;
+            for (let d = 0; d < doors.length; d++) {
+              if (yy === doors[d].ty && xx >= doors[d].tx && xx < doors[d].tx + HOUSE_DOOR_W) isDoor = true;
+            }
+            tiles[yy * MAP_W + xx] = (edge && !isDoor) ? T.HOUSE_WALL : floorTile;
+          }
+        }
+
+        // Giu cho: nha + 1 o quanh nha + 2 o them ngoai moi cua
+        for (let yy = y0 - 1; yy <= y0 + hh; yy++) {
+          for (let xx = x0 - 1; xx <= x0 + hw; xx++) reserved[yy * MAP_W + xx] = 1;
+        }
+        for (let d = 0; d < doors.length; d++) {
+          const dir = (doors[d].side === 'S') ? 1 : -1;
+          for (let k = 1; k <= 2; k++) {
+            const ry = doors[d].ty + dir * k;
+            if (ry < 0 || ry >= MAP_H) continue;
+            for (let w2 = 0; w2 < HOUSE_DOOR_W; w2++) reserved[ry * MAP_W + doors[d].tx + w2] = 1;
+          }
+        }
+
+        // Noi that trang tri: o trong sat tuong, tru 2 cot cua
+        const cand = [];
+        for (let yy = y0 + 1; yy <= y0 + hh - 2; yy++) {
+          for (let xx = x0 + 1; xx <= x0 + hw - 2; xx++) {
+            if (xx === doorX || xx === doorX + 1) continue;
+            if (tiles[yy * MAP_W + xx - 1] === T.HOUSE_WALL || tiles[yy * MAP_W + xx + 1] === T.HOUSE_WALL ||
+                tiles[(yy - 1) * MAP_W + xx] === T.HOUSE_WALL || tiles[(yy + 1) * MAP_W + xx] === T.HOUSE_WALL) {
+              cand.push({ tx: xx, ty: yy });
+            }
+          }
+        }
+        const crateN = 1 + (hw >= 8 ? 1 : 0);
+        const barrelN = 1 + (rng.next() < 0.5 ? 1 : 0);
+        const props = [];
+        for (let n = 0; n < crateN + barrelN && cand.length > 0; n++) {
+          const pick = cand.splice(Math.min(cand.length - 1, Math.floor(rng.next() * cand.length)), 1)[0];
+          props.push({
+            kind: (n < crateN) ? 'crate' : 'barrel',
+            tx: pick.tx, ty: pick.ty, x: pick.tx * 16 + 8, y: pick.ty * 16 + 8
+          });
+        }
+
+        houses.push({
+          type: houseType, islandId: isl.id, tx: x0, ty: y0, w: hw, h: hh,
+          x: (x0 + hw / 2) * 16, y: (y0 + hh / 2) * 16, doors: doors, props: props
+        });
+        houseRects.push({ x0: x0, y0: y0, x1: x0 + hw - 1, y1: y0 + hh - 1 });
         placed.push(h);
       }
 
@@ -278,7 +365,7 @@
       const treeCount = (isl.props && isl.props.trees) || Math.round(isl.radius * 0.35);
       for (let i = 0; i < treeCount; i++) {
         const t = sampleSpot(tiles, rng, isl, 0.15, 0.85, function (tx, ty, tt) {
-          return onLand(tx, ty, tt) && tt !== T.FLOOR && farFrom(placed, tx, ty, 2);
+          return onLand(tx, ty, tt) && tt !== T.FLOOR && !reserved[ty * MAP_W + tx] && farFrom(placed, tx, ty, 2);
         }, 300);
         if (!t) continue;
         tiles[t.ty * MAP_W + t.tx] = T.TREE;
@@ -290,7 +377,7 @@
       const chestCount = (isl.props && isl.props.chests) || 5;
       for (let i = 0; i < chestCount; i++) {
         const c = sampleSpot(tiles, rng, isl, 0.15, 0.75, function (tx, ty, t) {
-          return onLand(tx, ty, t) && farFrom(placed, tx, ty, 3);
+          return onLand(tx, ty, t) && !reserved[ty * MAP_W + tx] && farFrom(placed, tx, ty, 3);
         }, 300);
         if (!c) continue;
         let tier = 'wood';

@@ -1,7 +1,8 @@
 // client/js/05b-render-entities.js
 // Render thuc the theo MOT danh sach sap theo y chan (vat thap hon tren man hinh de vat cao hon):
-// ruong, nha, cay, nguoi choi, item, thuyen. Luot 1 ve tat ca bong elip (ART-REF rgba(0,0,0,.35)), luot 2 ve sprite.
+// ruong, do noi that nha (thung), cay, nguoi choi, item, thuyen. Luot 1 ve tat ca bong elip (ART-REF rgba(0,0,0,.35)), luot 2 ve sprite.
 // Overlay nguoi choi (tia ngam F3, nhan ten, thanh mau, thanh the luc) ve rieng qua OP.R.renderOverlays, sau lop anh sang.
+// Mai nha ve rieng qua OP.R.renderRoofs (sau thuc the), mo dan khi nguoi choi buoc vao trong nha.
 // Phu thuoc: client/js/00-boot.js, client/js/02a-pixel-core.js, client/js/02c-sprites-chars.js, client/js/04-camera.js.
 
 (function () {
@@ -41,7 +42,7 @@
   };
 
   // Ban kinh bong theo loai thuc the (giu nguyen tham so cu)
-  const SHADOW_R = { CHEST: 8, HOUSE: 14, TREE: 11, PLAYER: 7, ITEM: 5, BOAT: 12 };
+  const SHADOW_R = { CHEST: 8, PROP: 6, TREE: 11, PLAYER: 7, ITEM: 5, BOAT: 12 };
 
   // Danh sach ve dung lai giua cac khung (pool object, khong tao object moi moi khung)
   const drawPool = [];
@@ -73,7 +74,12 @@
     return (a.y - b.y) || (a.x - b.x) || (a.o - b.o);
   }
 
-  // Thu thap ruong, nha, cay trong khung nhin (y chan = y tam bong)
+  // Le cull theo tam nha: nua canh dai nhat + 16px
+  function houseMargin(h) {
+    return Math.max(h.w || 0, h.h || 0) * 8 + 16;
+  }
+
+  // Thu thap ruong, do noi that, cay trong khung nhin (y chan = y tam bong)
   function collectMap(map, cam) {
     if (map.chests) {
       for (let i = 0; i < map.chests.length; i++) {
@@ -84,7 +90,11 @@
     if (map.houses) {
       for (let i = 0; i < map.houses.length; i++) {
         const h = map.houses[i];
-        if (!cam || cam.isInView(h.x, h.y, 40)) pushDraw('HOUSE', h, h.x, h.y + 8, false);
+        if (!h.props || (cam && !cam.isInView(h.x, h.y, houseMargin(h)))) continue;
+        for (let j = 0; j < h.props.length; j++) {
+          const p = h.props[j];
+          pushDraw('PROP', p, p.x, p.y + 5, false);
+        }
       }
     }
     if (map.trees) {
@@ -126,8 +136,8 @@
     if (!OP.SPR || !OP.SPR.draw) return;
     if (e.k === 'CHEST') {
       OP.SPR.draw(ctx, `chest_${ref.tier || 'wood'}`, 0, ref.x, ref.y);
-    } else if (e.k === 'HOUSE') {
-      OP.SPR.draw(ctx, ref.type || 'house_wood', 0, ref.x, ref.y);
+    } else if (e.k === 'PROP') {
+      OP.SPR.draw(ctx, ref.kind, 0, ref.x, ref.y);
     } else if (e.k === 'TREE') {
       OP.SPR.draw(ctx, ref.type || 'tree_palm', 0, ref.x, ref.y);
     }
@@ -191,6 +201,7 @@
     if (!ctx) return;
     for (let i = 0; i < overlayCount; i++) {
       const p = overlayList[i];
+      if (p !== overlayMe && OP.R.roofAlphaAt(p.x, p.y) >= 0.5) continue; // nguoi khac trong nha: mai che
       drawPlayerOverlay(ctx, p, p === overlayMe);
     }
   };
@@ -302,6 +313,138 @@
       ctx.fillRect(x - 10, y - 19, Math.round(20 * stPct), 1);
     }
   }
+
+  // ---------- Mai nha ----------
+
+  const ROOF_COLORS = {
+    house_wood: { c1: '#9a3a2e', c2: '#6a2420', ridge: '#c86a4a' },
+    house_small: { c1: '#9a3a2e', c2: '#6a2420', ridge: '#c86a4a' },
+    house_stone: { c1: '#4a4a5e', c2: '#2e2e3c', ridge: '#7a7a92' }
+  };
+  const ROOF_FADE_SPEED = 4; // do mo moi giay
+  const roofCache = new Map();
+  const roofAlpha = new Map(); // chi so nha -> do mo hien tai (khong ghi vao object map)
+  let roofMap = null;
+  let roofLastTime = 0;
+
+  // Canvas mai theo loai + kich thuoc, ve 1 lan
+  function getRoofCanvas(type, w, h) {
+    const key = `${type}_${w}x${h}`;
+    if (roofCache.has(key)) return roofCache.get(key);
+    if (typeof document === 'undefined' || !document.createElement) return null;
+    const cv = document.createElement('canvas');
+    cv.width = w * 16;
+    cv.height = h * 16;
+    const g = cv.getContext('2d');
+    if (!g) return null;
+    g.imageSmoothingEnabled = false;
+    const W = cv.width;
+    const H = cv.height;
+    const col = ROOF_COLORS[type] || ROOF_COLORS.house_wood;
+
+    g.fillStyle = col.c1;
+    g.fillRect(0, 0, W, H);
+    // Ranh ngoi ngang moi 4px, manh doc moi 6px so le theo hang
+    g.fillStyle = col.c2;
+    for (let y = 3; y < H; y += 4) g.fillRect(0, y, W, 1);
+    for (let band = 0; band * 4 < H; band++) {
+      for (let x = (band % 2) * 3; x < W; x += 6) g.fillRect(x, band * 4, 1, 3);
+    }
+    // Nua tren sang, nua duoi toi
+    g.fillStyle = 'rgba(255,255,255,0.06)';
+    g.fillRect(0, 0, W, H / 2);
+    g.fillStyle = 'rgba(0,0,0,0.12)';
+    g.fillRect(0, H / 2, W, H / 2);
+    // Noc mai ngang giua
+    g.fillStyle = col.ridge;
+    g.fillRect(0, H / 2 - 1, W, 2);
+    // Mep trai toi, mep phai sang
+    g.fillStyle = 'rgba(0,0,0,0.3)';
+    g.fillRect(0, 0, 2, H);
+    g.fillStyle = 'rgba(255,255,255,0.12)';
+    g.fillRect(W - 2, 0, 2, H);
+    // Cua troi o nua tren
+    const n = w >= 7 ? 2 : 1;
+    for (let i = 0; i < n; i++) {
+      const sx = Math.round(W * (i + 1) / (n + 1)) - 3;
+      const sy = Math.round(H / 4) - 2;
+      g.fillStyle = '#5e3b1c';
+      g.fillRect(sx, sy, 6, 5);
+      g.fillStyle = '#9fd0ff';
+      g.fillRect(sx + 1, sy + 1, 4, 3);
+      g.fillStyle = '#d7e2f5';
+      g.fillRect(sx + 1, sy + 2, 1, 1);
+      g.fillRect(sx + 2, sy + 1, 1, 1);
+    }
+    // Vien den quanh mai
+    g.fillStyle = '#160e22';
+    g.fillRect(0, 0, W, 1);
+    g.fillRect(0, H - 1, W, 1);
+    g.fillRect(0, 0, 1, H);
+    g.fillRect(W - 1, 0, 1, H);
+
+    roofCache.set(key, cv);
+    return cv;
+  }
+
+  function meInsideHouse(me, h) {
+    if (!me) return false;
+    const tx = Math.floor(me.x / 16);
+    const ty = Math.floor(me.y / 16);
+    return tx >= h.tx && tx < h.tx + h.w && ty >= h.ty && ty < h.ty + h.h;
+  }
+
+  // Ve mai moi nha trong khung nhin (toa do the gioi); mai mo dan khi minh dung trong nha
+  OP.R.renderRoofs = function (ctx) {
+    const state = OP.GAME && OP.GAME.state;
+    if (!ctx || !state || !state.map || !state.map.houses) return;
+    const map = state.map;
+    const cam = OP.CAM;
+
+    if (roofMap !== map) {
+      roofMap = map;
+      roofAlpha.clear();
+    }
+    const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+    const dt = roofLastTime ? Math.min(0.1, Math.max(0, (now - roofLastTime) / 1000)) : 0;
+    roofLastTime = now;
+
+    for (let i = 0; i < map.houses.length; i++) {
+      const h = map.houses[i];
+      if (!h.w || (cam && !cam.isInView(h.x, h.y, houseMargin(h)))) {
+        roofAlpha.delete(i);
+        continue;
+      }
+      const target = meInsideHouse(state.me, h) ? 0 : 1;
+      let a = roofAlpha.has(i) ? roofAlpha.get(i) : target;
+      if (a < target) a = Math.min(target, a + ROOF_FADE_SPEED * dt);
+      else if (a > target) a = Math.max(target, a - ROOF_FADE_SPEED * dt);
+      roofAlpha.set(i, a);
+      if (a <= 0.01) continue;
+
+      const cv = getRoofCanvas(h.type, h.w, h.h);
+      if (!cv) continue;
+      ctx.globalAlpha = a;
+      ctx.drawImage(cv, h.tx * 16, h.ty * 16);
+      ctx.globalAlpha = 1;
+    }
+  };
+
+  // Do mo mai cua nha chua diem (px the gioi); 0 neu diem khong nam trong nha nao
+  OP.R.roofAlphaAt = function (x, y) {
+    const state = OP.GAME && OP.GAME.state;
+    if (!state || !state.map || !state.map.houses) return 0;
+    const tx = Math.floor(x / 16);
+    const ty = Math.floor(y / 16);
+    const hs = state.map.houses;
+    for (let i = 0; i < hs.length; i++) {
+      const h = hs[i];
+      if (!h.w || tx < h.tx || tx >= h.tx + h.w || ty < h.ty || ty >= h.ty + h.h) continue;
+      if (roofMap === state.map && roofAlpha.has(i)) return roofAlpha.get(i);
+      return meInsideHouse(state.me, h) ? 0 : 1;
+    }
+    return 0;
+  };
 
   OP.R.drawShadow = drawShadow;
   OP.R.drawOutlinedText = drawOutlinedText;

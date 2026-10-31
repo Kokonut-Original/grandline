@@ -137,6 +137,10 @@
         OP.R.renderEntities(worldCtx);
       }
 
+      if (OP.R && OP.R.renderRoofs) {
+        OP.R.renderRoofs(worldCtx);
+      }
+
       if (OP.CAM && OP.CAM.restore) {
         OP.CAM.restore(worldCtx);
       }

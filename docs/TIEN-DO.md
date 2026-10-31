@@ -1,6 +1,6 @@
 # TIẾN ĐỘ & KẾ HOẠCH
 
-## TASK HIỆN TẠI: M03B-T02
+## TASK HIỆN TẠI: M03B-T03
 
 ## Quyết định đã chốt
 
@@ -14,6 +14,7 @@
 - Khoảng 10 người chơi + 22 bot = 32. Bot 2 mức normal/hard (mặc định 60% hard), hạ bot được truy nã như người thật.
 - View 480×270 cố định, phóng to theo số nguyên (có viền nếu tỉ lệ màn hình khác). Không chạy nhanh bằng Shift.
 - Không làm phần bảo mật chuyên sâu.
+- Nhà nhiều ô (tường HOUSE_WALL, cửa 2 ô, mái che mờ khi vào trong). Thùng crate/barrel trong nhà hiện chỉ là trang trí; chặn đường/phá được để M05.
 
 ## Bug tồn đọng
 
@@ -108,7 +109,7 @@
   - Mục tiêu: vách bờ + bóng đổ, nước gradient + gợn động + bọt bờ, bãi cát, bờ theo nhiễu, texture riêng từng biome.
 - [x] **T01g Sắp theo y + ánh sáng** [Sonnet]
   - Mục tiêu: một danh sách vẽ sắp theo y, lớp ánh sáng theo ART-REF (ambient theo vùng).
-- [ ] **T02 Nhà top-down** [Sonnet]
+- [x] **T02 Nhà top-down** [Sonnet]
   - Mục tiêu: Nhà 2D top-down surviv.io, mái che + skylight, thềm gạch, thùng crate, barrel, hiệu ứng biến mất mái khi vào trong.
   - Xong khi: đứng ngoài thấy mái, bước vào trong mái mờ dần thấy nội thất.
 - [ ] **T03 Nhân vật & Ánh sáng** [Sonnet]
@@ -217,5 +218,7 @@ Mỗi task trái phải có: data đầy đủ, server logic, hiệu ứng clien
 | M03B-T01b | reports/M03B-T01b.md | 2026-10-26 |
 | M03B-T01c | reports/M03B-T01c.md | 2026-10-26 |
 | M03B-T01d | reports/M03B-T01d.md | 2026-10-26 |
-| M03B-T01e | reports/M03B-T01e.md | 2026-10-26 || M03B-T01f | reports/M03B-T01f.md | 2026-10-26 |
+| M03B-T01e | reports/M03B-T01e.md | 2026-10-26 |
+| M03B-T01f | reports/M03B-T01f.md | 2026-10-26 |
 | M03B-T01g | reports/M03B-T01g.md | 2026-10-31 |
+| M03B-T02 | reports/M03B-T02.md | 2026-10-31 |

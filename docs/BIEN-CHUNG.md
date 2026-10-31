@@ -288,6 +288,12 @@ scroll_soru:    { id, name, kind: 'SCROLL', tier: 'B', roku: 'soru',
 // map.owner = Uint8Array(320*320): 0 nước, 1..10 đất đảo lớn (theo thứ tự S.ISLANDS), >= 11 đảo nhỏ
 // Bờ thật giữa 2 đảo lớn >= 8 tile, đảo nhỏ với đảo khác >= 4 tile, đất cách mép map >= 20 tile.
 // Bến thuyền (1–2 mỗi đảo) do mapgen sinh, nằm trong map.docks, không khai báo trong S.ISLANDS.
+// map.houses[i] = { type: 'house_small' | 'house_wood' | 'house_stone', islandId,
+//   tx, ty,            // góc trái trên (tile); w, h: kích thước tính cả tường (small 6×5, wood 8×6, stone 10×7)
+//   x, y,              // tâm nhà (px)
+//   doors: [ { tx, ty, side: 'S' | 'N' } ],   // cửa rộng 2 ô (tx, tx+1) trên hàng tường ty; stone có thêm cửa Bắc
+//   props: [ { kind: 'crate' | 'barrel', tx, ty, x, y } ] }  // đồ trang trí sát tường, chưa chặn di chuyển
+// Viền nhà là HOUSE_WALL (trừ ô cửa), bên trong là WOOD (stone: FLOOR). Client: OP.R.renderRoofs vẽ mái, OP.R.roofAlphaAt(x, y) cho độ mờ mái tại điểm.
 
 // S.BOATS (15)
 { id, name, seats, speed, hp, fuel: null | 60, cannon: null | { dmg, cd, aoe } }

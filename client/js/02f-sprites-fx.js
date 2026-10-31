@@ -1,5 +1,5 @@
 // client/js/02f-sprites-fx.js
-// Sprite cho hat hieu ung, don danh (slash, bullet, explosion, fire) va bieu cam khan gia.
+// Sprite cho hat hieu ung, don danh (slash, bullet, explosion, fire), bieu cam khan gia va noi that nha (thung go, thung tron).
 // Phu thuoc: client/js/00-boot.js, client/js/02a-pixel-core.js, client/js/02b-palette.js.
 
 (function (root) {
@@ -187,7 +187,68 @@
     });
   }
 
+  // ==========================================
+  // 2b. THUNG GO / THUNG TRON TRONG NHA (trang tri, chan o duoi cach tam 5px)
+  // ==========================================
+  const CRATE_ROWS = [
+    ' OOOOOOOOOOOO ',
+    'OHHHHHHHHHHHHO',
+    'OHDNNNNNNNNDDO',
+    'OHHDMMMMMMDHDO',
+    'OHNHDNNNNDHNDO',
+    'OHMMHDMMDHMMDO',
+    'OHNNNHDDHNNNDO',
+    'OHMMMMDDMMMMDO',
+    'OHNNNDHHDNNNDO',
+    'OHMMDHMMHDMMDO',
+    'OHNDHNNNNHDNDO',
+    'OHDHMMMMMMHDDO',
+    'OHDDDDDDDDDDDO',
+    ' OOOOOOOOOOOO '
+  ];
+
+  const BARREL_ROWS = [
+    '  OOOOOO  ',
+    ' OHHNNHHO ',
+    'OHMNMGMMDO',
+    'OBLBBBBBBO',
+    'OHMNMGMMDO',
+    'OHMNMGMMDO',
+    'OHMNMGMMDO',
+    'OHMNMGMMDO',
+    'OBLBBBBBBO',
+    'OHMNMGMMDO',
+    ' OHMNGMDO ',
+    '  OOOOOO  '
+  ];
+
+  function registerProps() {
+    SPR.define('crate', {
+      frames: [CRATE_ROWS],
+      palette: { O: '#160e22', H: '#a8743c', D: '#5e3b1c', M: '#7a4a24', N: '#8a5a2e' },
+      w: 14,
+      h: 14,
+      originX: 7,
+      originY: 9,
+      anim: 'static'
+    });
+
+    SPR.define('barrel', {
+      frames: [BARREL_ROWS],
+      palette: {
+        O: '#160e22', H: '#a8743c', D: '#5e3b1c', M: '#7a4a24', N: '#8a5a2e', G: '#2a1a10',
+        B: '#4a4a5e', L: '#9898b4'
+      },
+      w: 10,
+      h: 12,
+      originX: 5,
+      originY: 7,
+      anim: 'static'
+    });
+  }
+
   registerCombatFx();
   registerEmotes();
+  registerProps();
 
 })(typeof window !== 'undefined' ? window : globalThis);

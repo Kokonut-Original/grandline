@@ -223,10 +223,10 @@
   // ---------- Tuong ----------
 
   // Tuong nhin tu tren: mat tren sang; neu o duoi khong phai tuong thi lo mat dung gach (2.5D)
-  function paintWall(g, map, px, py, tx, ty) {
-    const p = pal('WALL');
+  function paintWall(g, map, px, py, tx, ty, t) {
+    const p = pal(t === T.HOUSE_WALL ? 'HOUSE_WALL' : 'WALL');
     const below = tileAt(map, tx, ty + 1);
-    const faceVisible = below !== T.WALL;
+    const faceVisible = below !== t;
     g.fillStyle = p.high;
     g.fillRect(px, py, TP, TP);
     g.fillStyle = 'rgba(255,255,255,0.12)';
@@ -241,10 +241,58 @@
       g.fillStyle = 'rgba(0,0,0,0.3)';
       g.fillRect(px, py + 14, TP, 2);
     }
-    if (tileAt(map, tx - 1, ty) !== T.WALL) {
+    if (tileAt(map, tx - 1, ty) !== t) {
       g.fillStyle = 'rgba(0,0,0,0.22)';
       g.fillRect(px, py, 1, TP);
     }
+  }
+
+  // ---------- Them gach truoc cua nha ----------
+
+  // Mat na o them (2 o ngoai moi cua nha), dung 1 lan cho moi map
+  const stepMasks = new WeakMap();
+
+  function houseStepAt(map, tx, ty) {
+    if (!map || !map.houses || tx < 0 || ty < 0 || tx >= N || ty >= N) return false;
+    let mask = stepMasks.get(map);
+    if (!mask) {
+      mask = new Uint8Array(N * N);
+      for (let i = 0; i < map.houses.length; i++) {
+        const doors = map.houses[i].doors || [];
+        for (let d = 0; d < doors.length; d++) {
+          const sy = doors[d].ty + (doors[d].side === 'N' ? -1 : 1);
+          for (let k = 0; k < 2; k++) {
+            const sx = doors[d].tx + k;
+            if (sx >= 0 && sy >= 0 && sx < N && sy < N) mask[sy * N + sx] = 1;
+          }
+        }
+      }
+      stepMasks.set(map, mask);
+    }
+    return mask[ty * N + tx] === 1;
+  }
+
+  // Phu gach xam thi tran len o them: 2 hang gach cao 8px, mau xen ke theo hash, ron 1px so le giua 2 hang
+  function paintHouseStep(g, px, py, tx, ty) {
+    const cols = ['#3a3a4a', '#3e3e50', '#363646'];
+    const seams = [[0, 8], [4, 12]]; // vi tri mach dung tung hang
+    for (let row = 0; row < 2; row++) {
+      const y = py + row * 8;
+      const sx = seams[row];
+      // Cac doan gach: tu mach nay toi mach ke (tinh ca doan bao quanh mep o)
+      const cuts = (sx[0] === 0) ? [0, 8, 16] : [0, 4, 12, 16];
+      for (let i = 0; i < cuts.length - 1; i++) {
+        g.fillStyle = cols[Math.floor(hash2(tx * 5 + i + row * 3, ty * 7 + row) * 3) % 3];
+        g.fillRect(px + cuts[i], y, cuts[i + 1] - cuts[i], 8);
+      }
+      g.fillStyle = '#2a2a38';
+      g.fillRect(px, y + 7, TP, 1);
+      for (let i = 0; i < sx.length; i++) g.fillRect(px + sx[i], y, 1, 7);
+    }
+    g.fillStyle = 'rgba(255,255,255,0.08)';
+    g.fillRect(px, py, TP, 1);
+    g.fillStyle = 'rgba(0,0,0,0.3)';
+    g.fillRect(px, py + 14, TP, 2);
   }
 
   // ---------- Chieu sau o mep ----------
@@ -268,7 +316,7 @@
       }
       return;
     }
-    if (t === T.DOCK || t === T.BRIDGE || t === T.WALL) return;
+    if (t === T.DOCK || t === T.BRIDGE || t === T.WALL || t === T.HOUSE_WALL) return;
 
     const beach = (t === T.SAND || t === T.QUICKSAND);
     if (isWater(down)) {
@@ -320,7 +368,7 @@
   SPR.paintTile = function (g, map, tx, ty, px, py, depth) {
     let t = tileAt(map, tx, ty);
     const r = hash2(tx, ty);
-    if (t === T.TREE || t === T.HOUSE_WALL) t = groundUnder(map, tx, ty);
+    if (t === T.TREE) t = groundUnder(map, tx, ty);
 
     switch (t) {
       case T.DEEP:
@@ -337,7 +385,8 @@
       case T.LAVA: paintLava(g, px, py, tx, ty, r); break;
       case T.QUICKSAND: paintQuicksand(g, px, py, tx, ty, r); break;
       case T.WOOD: paintPlanks(g, px, py, tx, ty, r, pal('WOOD'), false); break;
-      case T.WALL: paintWall(g, map, px, py, tx, ty); break;
+      case T.WALL: paintWall(g, map, px, py, tx, ty, T.WALL); break;
+      case T.HOUSE_WALL: paintWall(g, map, px, py, tx, ty, T.HOUSE_WALL); break;
       case T.DOCK:
       case T.BRIDGE: {
         // Van chay theo huong cau: hang xom doc la cau/ben thi van doc
@@ -355,7 +404,18 @@
         paintGrass(g, px, py, tx, ty, r);
     }
 
+    if (!isWater(t) && houseStepAt(map, tx, ty)) paintHouseStep(g, px, py, tx, ty);
+
     paintEdges(g, map, px, py, tx, ty, t);
+
+    // Bong tuong/mai do xuong o dat ngay phia Nam
+    if (!isWater(t) && t !== T.WALL && t !== T.HOUSE_WALL && t !== T.DOCK && t !== T.BRIDGE) {
+      const above = tileAt(map, tx, ty - 1);
+      if (above === T.WALL || above === T.HOUSE_WALL) {
+        g.fillStyle = 'rgba(0,0,0,0.3)';
+        g.fillRect(px, py, TP, 4);
+      }
+    }
   };
 
   SPR.hash2 = hash2;
